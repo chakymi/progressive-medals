@@ -1,0 +1,180 @@
+{
+  "campaign": "Fall 2026",
+  "captures": [
+    {
+      "number": 1,
+      "uid": "ypPmohQofd72MyTsIsijKfrJH98",
+      "wrMs": 19991,
+      "wrCapturedAtUtc": 1791929891,
+      "source": "https://trackmania.io/api/leaderboard/map/ypPmohQofd72MyTsIsijKfrJH98?length=1"
+    },
+    {
+      "number": 2,
+      "uid": "kG3Rv5UyAgqu9e05ive6SIOei59",
+      "wrMs": 21293,
+      "wrCapturedAtUtc": 1791929898,
+      "source": "https://trackmania.io/api/leaderboard/map/kG3Rv5UyAgqu9e05ive6SIOei59?length=1"
+    },
+    {
+      "number": 3,
+      "uid": "kFAkAeGS10_LZqazKRtwTClKAWa",
+      "wrMs": 18892,
+      "wrCapturedAtUtc": 1791929905,
+      "source": "https://trackmania.io/api/leaderboard/map/kFAkAeGS10_LZqazKRtwTClKAWa?length=1"
+    },
+    {
+      "number": 4,
+      "uid": "86Gl5t02hAzSD7oiiGjzi9p3wN9",
+      "wrMs": 20166,
+      "wrCapturedAtUtc": 1791929911,
+      "source": "https://trackmania.io/api/leaderboard/map/86Gl5t02hAzSD7oiiGjzi9p3wN9?length=1"
+    },
+    {
+      "number": 5,
+      "uid": "v96wCr7mP5xEGxNLSnZC6DAp4se",
+      "wrMs": 21833,
+      "wrCapturedAtUtc": 1791929917,
+      "source": "https://trackmania.io/api/leaderboard/map/v96wCr7mP5xEGxNLSnZC6DAp4se?length=1"
+    },
+    {
+      "number": 6,
+      "uid": "cLYaG2Zgsxgui3s2GsVLs_KB1e6",
+      "wrMs": 26641,
+      "wrCapturedAtUtc": 1791929924,
+      "source": "https://trackmania.io/api/leaderboard/map/cLYaG2Zgsxgui3s2GsVLs_KB1e6?length=1"
+    },
+    {
+      "number": 7,
+      "uid": "8hy1I_EGrEJQQZS8SN3S3rZoHnj",
+      "wrMs": 28605,
+      "wrCapturedAtUtc": 1791929930,
+      "source": "https://trackmania.io/api/leaderboard/map/8hy1I_EGrEJQQZS8SN3S3rZoHnj?length=1"
+    },
+    {
+      "number": 8,
+      "uid": "6HxhQPmuTq3k9aqLYUCKzyveyrj",
+      "wrMs": 27964,
+      "wrCapturedAtUtc": 1791929936,
+      "source": "https://trackmania.io/api/leaderboard/map/6HxhQPmuTq3k9aqLYUCKzyveyrj?length=1"
+    },
+    {
+      "number": 9,
+      "uid": "RnjnOu0fwna8i3hjnRT1Wnuxqz2",
+      "wrMs": 27534,
+      "wrCapturedAtUtc": 1791929942,
+      "source": "https://trackmania.io/api/leaderboard/map/RnjnOu0fwna8i3hjnRT1Wnuxqz2?length=1"
+    },
+    {
+      "number": 10,
+      "uid": "bhUUSH5VObphEXdiTefufnQRgqe",
+      "wrMs": 29365,
+      "wrCapturedAtUtc": 1791929948,
+      "source": "https://trackmania.io/api/leaderboard/map/bhUUSH5VObphEXdiTefufnQRgqe?length=1"
+    },
+    {
+      "number": 11,
+      "uid": "C2gHk3vNJKbcvS9HNkcsZsXDkxf",
+      "wrMs": 31056,
+      "wrCapturedAtUtc": 1791929954,
+      "source": "https://trackmania.io/api/leaderboard/map/C2gHk3vNJKbcvS9HNkcsZsXDkxf?length=1"
+    },
+    {
+      "number": 12,
+      "uid": "02b27YA4k3MWlS50A9TFGZy7Eu",
+      "wrMs": 31274,
+      "wrCapturedAtUtc": 1791929960,
+      "source": "https://trackmania.io/api/leaderboard/map/02b27YA4k3MWlS50A9TFGZy7Eu?length=1"
+    },
+    {
+      "number": 13,
+      "uid": "JBzaNvC881cVdRIF2vHmBXAXX3f",
+      "wrMs": 28301,
+      "wrCapturedAtUtc": 1791929966,
+      "source": "https://trackmania.io/api/leaderboard/map/JBzaNvC881cVdRIF2vHmBXAXX3f?length=1"
+    },
+    {
+      "number": 14,
+      "uid": "yMT18290SqZuoemMgbjfTPEIxA",
+      "wrMs": 35569,
+      "wrCapturedAtUtc": 1791929973,
+      "source": "https://trackmania.io/api/leaderboard/map/yMT18290SqZuoemMgbjfTPEIxA?length=1"
+    },
+    {
+      "number": 15,
+      "uid": "bYG3jvXV8_FdQvihFN1II3vIU0g",
+      "wrMs": 28233,
+      "wrCapturedAtUtc": 1791929979,
+      "source": "https://trackmania.io/api/leaderboard/map/bYG3jvXV8_FdQvihFN1II3vIU0g?length=1"
+    },
+    {
+      "number": 16,
+      "uid": "329LW2no6y6MSODVtejfO19yaMd",
+      "wrMs": 51049,
+      "wrCapturedAtUtc": 1791929985,
+      "source": "https://trackmania.io/api/leaderboard/map/329LW2no6y6MSODVtejfO19yaMd?length=1"
+    },
+    {
+      "number": 17,
+      "uid": "cHm6_B17YvXb9Sb6sJnWKZBzmbi",
+      "wrMs": 43632,
+      "wrCapturedAtUtc": 1791929991,
+      "source": "https://trackmania.io/api/leaderboard/map/cHm6_B17YvXb9Sb6sJnWKZBzmbi?length=1"
+    },
+    {
+      "number": 18,
+      "uid": "DtZod9QxwCN5W1Xb7Q_TpCUrft",
+      "wrMs": 59323,
+      "wrCapturedAtUtc": 1791929997,
+      "source": "https://trackmania.io/api/leaderboard/map/DtZod9QxwCN5W1Xb7Q_TpCUrft?length=1"
+    },
+    {
+      "number": 19,
+      "uid": "n08wkWW4wuvFVnlDGhg0EQNtKn8",
+      "wrMs": 37390,
+      "wrCapturedAtUtc": 1791930003,
+      "source": "https://trackmania.io/api/leaderboard/map/n08wkWW4wuvFVnlDGhg0EQNtKn8?length=1"
+    },
+    {
+      "number": 20,
+      "uid": "lHHMZkgxAw2Qdhrr7wAcP0x5Nxi",
+      "wrMs": 43241,
+      "wrCapturedAtUtc": 1791930009,
+      "source": "https://trackmania.io/api/leaderboard/map/lHHMZkgxAw2Qdhrr7wAcP0x5Nxi?length=1"
+    },
+    {
+      "number": 21,
+      "uid": "eO5YaC9a_wks7nDc2bcIFfk7PB4",
+      "wrMs": 68735,
+      "wrCapturedAtUtc": 1791930015,
+      "source": "https://trackmania.io/api/leaderboard/map/eO5YaC9a_wks7nDc2bcIFfk7PB4?length=1"
+    },
+    {
+      "number": 22,
+      "uid": "FUrAZFVkgl9dZKpVFPlpvSf0plc",
+      "wrMs": 69047,
+      "wrCapturedAtUtc": 1791930022,
+      "source": "https://trackmania.io/api/leaderboard/map/FUrAZFVkgl9dZKpVFPlpvSf0plc?length=1"
+    },
+    {
+      "number": 23,
+      "uid": "V7eUfkrrczwLX33j4geGUglMBT1",
+      "wrMs": 59788,
+      "wrCapturedAtUtc": 1791930028,
+      "source": "https://trackmania.io/api/leaderboard/map/V7eUfkrrczwLX33j4geGUglMBT1?length=1"
+    },
+    {
+      "number": 24,
+      "uid": "nuLZ3tXpNxiZKOEprMlntvFZFub",
+      "wrMs": 62197,
+      "wrCapturedAtUtc": 1791930034,
+      "source": "https://trackmania.io/api/leaderboard/map/nuLZ3tXpNxiZKOEprMlntvFZFub?length=1"
+    },
+    {
+      "number": 25,
+      "uid": "Cys52buy8uoYWkwroz7bbrg4_z4",
+      "wrMs": 61005,
+      "wrCapturedAtUtc": 1791930040,
+      "source": "https://trackmania.io/api/leaderboard/map/Cys52buy8uoYWkwroz7bbrg4_z4?length=1"
+    }
+  ]
+}
