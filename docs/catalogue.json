@@ -1,15 +1,15 @@
 {
   "schema": 2,
-  "version": 3,
+  "version": 4,
   "maps": {
     "DEMO-PROGRESSIVE-001": {
       "name": "Virages courts (fictif)",
       "authorMs": 60000,
       "referenceWrMs": 51000,
       "timesMs": [
-        59780,
-        57750,
-        53593
+        57300,
+        54600,
+        51900
       ],
       "release": {
         "kind": "demo"
@@ -20,9 +20,9 @@
       "authorMs": 30000,
       "referenceWrMs": 29990,
       "timesMs": [
-        29999,
         29997,
-        29993
+        29994,
+        29991
       ],
       "release": {
         "kind": "demo"
@@ -33,9 +33,9 @@
       "authorMs": 120000,
       "referenceWrMs": 96000,
       "timesMs": [
-        119414,
-        114000,
-        102914
+        112800,
+        105600,
+        98400
       ],
       "release": {
         "kind": "demo"
@@ -46,16 +46,16 @@
       "authorMs": 22926,
       "referenceWrMs": 19991,
       "timesMs": [
-        22854,
-        22192,
-        20837
+        22045,
+        21165,
+        20284
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929891,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "kG3Rv5UyAgqu9e05ive6SIOei59": {
@@ -63,16 +63,16 @@
       "authorMs": 22622,
       "referenceWrMs": 21293,
       "timesMs": [
-        22590,
-        22290,
-        21676
+        22223,
+        21825,
+        21426
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929898,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "kFAkAeGS10_LZqazKRtwTClKAWa": {
@@ -80,16 +80,16 @@
       "authorMs": 21975,
       "referenceWrMs": 18892,
       "timesMs": [
-        21900,
-        21204,
-        19780
+        21050,
+        20125,
+        19200
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929905,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "86Gl5t02hAzSD7oiiGjzi9p3wN9": {
@@ -97,16 +97,16 @@
       "authorMs": 23438,
       "referenceWrMs": 20166,
       "timesMs": [
-        23358,
-        22620,
-        21109
+        22456,
+        21475,
+        20493
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929911,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "v96wCr7mP5xEGxNLSnZC6DAp4se": {
@@ -114,16 +114,16 @@
       "authorMs": 23997,
       "referenceWrMs": 21833,
       "timesMs": [
-        23944,
-        23456,
-        22456
+        23348,
+        22699,
+        22049
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929917,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "cLYaG2Zgsxgui3s2GsVLs_KB1e6": {
@@ -131,16 +131,16 @@
       "authorMs": 29175,
       "referenceWrMs": 26641,
       "timesMs": [
-        29113,
-        28541,
-        27371
+        28415,
+        27655,
+        26894
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929924,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "8hy1I_EGrEJQQZS8SN3S3rZoHnj": {
@@ -148,16 +148,16 @@
       "authorMs": 31425,
       "referenceWrMs": 28605,
       "timesMs": [
-        31356,
-        30720,
-        29417
+        30579,
+        29733,
+        28887
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929930,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "6HxhQPmuTq3k9aqLYUCKzyveyrj": {
@@ -165,16 +165,16 @@
       "authorMs": 30316,
       "referenceWrMs": 27964,
       "timesMs": [
-        30259,
-        29728,
-        28642
+        29610,
+        28905,
+        28199
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929936,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "RnjnOu0fwna8i3hjnRT1Wnuxqz2": {
@@ -182,16 +182,16 @@
       "authorMs": 29558,
       "referenceWrMs": 27534,
       "timesMs": [
-        29509,
-        29052,
-        28117
+        28951,
+        28344,
+        27736
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929942,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "bhUUSH5VObphEXdiTefufnQRgqe": {
@@ -199,16 +199,16 @@
       "authorMs": 31298,
       "referenceWrMs": 29365,
       "timesMs": [
-        31251,
-        30815,
-        29922
+        30718,
+        30138,
+        29558
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929948,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "C2gHk3vNJKbcvS9HNkcsZsXDkxf": {
@@ -216,16 +216,16 @@
       "authorMs": 33346,
       "referenceWrMs": 31056,
       "timesMs": [
-        33290,
-        32773,
-        31716
+        32659,
+        31972,
+        31285
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929954,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "02b27YA4k3MWlS50A9TFGZy7Eu": {
@@ -233,16 +233,16 @@
       "authorMs": 33712,
       "referenceWrMs": 31274,
       "timesMs": [
-        33652,
-        33102,
-        31976
+        32981,
+        32249,
+        31518
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929960,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "JBzaNvC881cVdRIF2vHmBXAXX3f": {
@@ -250,16 +250,16 @@
       "authorMs": 31358,
       "referenceWrMs": 28301,
       "timesMs": [
-        31283,
-        30594,
-        29182
+        30441,
+        29524,
+        28607
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929966,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "yMT18290SqZuoemMgbjfTPEIxA": {
@@ -267,16 +267,16 @@
       "authorMs": 39023,
       "referenceWrMs": 35569,
       "timesMs": [
-        38939,
-        38159,
-        36564
+        37987,
+        36951,
+        35914
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929973,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "bYG3jvXV8_FdQvihFN1II3vIU0g": {
@@ -284,16 +284,16 @@
       "authorMs": 31572,
       "referenceWrMs": 28233,
       "timesMs": [
-        31490,
-        30737,
-        29195
+        30570,
+        29569,
+        28567
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929979,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "329LW2no6y6MSODVtejfO19yaMd": {
@@ -301,16 +301,16 @@
       "authorMs": 54678,
       "referenceWrMs": 51049,
       "timesMs": [
-        54589,
-        53771,
-        52094
+        53589,
+        52501,
+        51412
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929985,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "cHm6_B17YvXb9Sb6sJnWKZBzmbi": {
@@ -318,16 +318,16 @@
       "authorMs": 47512,
       "referenceWrMs": 43632,
       "timesMs": [
-        47417,
-        46542,
-        44750
+        46348,
+        45184,
+        44020
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929991,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "DtZod9QxwCN5W1Xb7Q_TpCUrft": {
@@ -335,16 +335,16 @@
       "authorMs": 63702,
       "referenceWrMs": 59323,
       "timesMs": [
-        63595,
-        62607,
-        60585
+        62388,
+        61075,
+        59761
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791929997,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "n08wkWW4wuvFVnlDGhg0EQNtKn8": {
@@ -352,16 +352,16 @@
       "authorMs": 45545,
       "referenceWrMs": 37390,
       "timesMs": [
-        45346,
-        43506,
-        39739
+        43098,
+        40652,
+        38205
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791930003,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "lHHMZkgxAw2Qdhrr7wAcP0x5Nxi": {
@@ -369,16 +369,16 @@
       "authorMs": 46768,
       "referenceWrMs": 43241,
       "timesMs": [
-        46682,
-        45886,
-        44257
+        45710,
+        44652,
+        43594
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791930009,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "eO5YaC9a_wks7nDc2bcIFfk7PB4": {
@@ -386,16 +386,16 @@
       "authorMs": 92795,
       "referenceWrMs": 68735,
       "timesMs": [
-        92208,
-        86780,
-        75666
+        85577,
+        78359,
+        71141
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791930015,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "FUrAZFVkgl9dZKpVFPlpvSf0plc": {
@@ -403,16 +403,16 @@
       "authorMs": 95779,
       "referenceWrMs": 69047,
       "timesMs": [
-        95126,
-        89096,
-        76748
+        87759,
+        79740,
+        71720
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791930022,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "V7eUfkrrczwLX33j4geGUglMBT1": {
@@ -420,16 +420,16 @@
       "authorMs": 81105,
       "referenceWrMs": 59788,
       "timesMs": [
-        80585,
-        75776,
-        65929
+        74710,
+        68315,
+        61920
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791930028,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "nuLZ3tXpNxiZKOEprMlntvFZFub": {
@@ -437,16 +437,16 @@
       "authorMs": 79480,
       "referenceWrMs": 62197,
       "timesMs": [
-        79058,
-        75159,
-        67176
+        74295,
+        69110,
+        63925
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791930034,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     },
     "Cys52buy8uoYWkwroz7bbrg4_z4": {
@@ -454,18 +454,27 @@
       "authorMs": 83460,
       "referenceWrMs": 61005,
       "timesMs": [
-        82912,
-        77846,
-        67474
+        76723,
+        69987,
+        63250
       ],
       "release": {
         "kind": "launchCampaign",
         "anchorAtUtc": 1791925389,
         "availableAtUtc": 1791928989,
         "wrCapturedAtUtc": 1791930040,
-        "publishedAtUtc": 1791930042
+        "publishedAtUtc": 1791931490
       }
     }
   },
-  "launchAtUtc": 1791925389
+  "launchAtUtc": 1791925389,
+  "policy": {
+    "distribution": "linear",
+    "percent": [
+      30,
+      60,
+      90
+    ],
+    "wrSnapshot": "v3"
+  }
 }

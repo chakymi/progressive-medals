@@ -1,6 +1,8 @@
 """Offline publisher: immutable integer-millisecond goals from author and snapshot WR.
 
 Usage: python tools/generate.py input.json output.json --power 2
+Catalogue versions 1-3 keep their historical smoothstep formula. Version 4+
+uses 30/60/90 percent of the same frozen Author-to-WR interval (no Champion).
 The generated JSON is reviewable before publication; never generated in the plugin.
 """
 import argparse
@@ -77,9 +79,30 @@ def goals(author_ms: int, wr_ms: int, power: int = 2, *, count: int = COUNT) -> 
     return result
 
 
+def goals_linear(author_ms: int, wr_ms: int) -> list[int]:
+    """Three reproducible targets at 30%, 60%, 90%; strict even in a 3ms gap."""
+    if type(author_ms) is not int or type(wr_ms) is not int or not (1 <= wr_ms < author_ms <= MAX_MS):
+        raise ValueError("author/WR must be positive integer milliseconds, WR < author")
+    gap = author_ms - wr_ms
+    if gap < COUNT:
+        raise ValueError("not enough distinct milliseconds for three goals")
+    result = []
+    for i in range(1, COUNT + 1):
+        offset = gap * Fraction(3 * i, 10)
+        rounded = (2 * offset.numerator + offset.denominator) // (2 * offset.denominator)
+        upper = result[-1] - 1 if result else author_ms - 1
+        lower = wr_ms + COUNT - i
+        result.append(max(lower, min(upper, author_ms - rounded)))
+    assert len(result) == COUNT and all(wr_ms <= t < author_ms for t in result)
+    assert all(a > b for a, b in zip(result, result[1:]))
+    return result
+
+
 def publish(source: dict, power: int = 2, now_utc: int | None = None) -> dict:
     if type(source) is not dict or type(source.get("version")) is not int or not 1 <= source["version"] <= 1_000_000:
         raise ValueError("positive integer version required")
+    if source["version"] >= 4 and power != 2:
+        raise ValueError("--power applies only to historical smoothstep versions 1-3")
     schema = source.get("schema", 1)
     if type(schema) is not int or schema not in (1, 2):
         raise ValueError("supported schemas: 1 (demo only), 2 (scheduled)")
@@ -104,9 +127,11 @@ def publish(source: dict, power: int = 2, now_utc: int | None = None) -> dict:
             raise ValueError(f"invalid map name for {uid}")
         release = release_for(uid, item, schema, now_utc, launch_utc)
         author, wr = item.get("authorMs"), item.get("referenceWrMs")
+        targets = (goals_linear(author, wr) if source["version"] >= 4
+                   else goals(author, wr, power,
+                       count=LEGACY_DEMO_COUNT if schema == 1 and source["version"] == 1 else COUNT))
         output[uid] = {"name": item["name"], "authorMs": author,
-                       "referenceWrMs": wr, "timesMs": goals(author, wr, power,
-                           count=LEGACY_DEMO_COUNT if schema == 1 and source["version"] == 1 else COUNT)}
+                       "referenceWrMs": wr, "timesMs": targets}
         if release is not None:
             output[uid]["release"] = release
     result = {"schema": schema, "version": source["version"], "maps": output}

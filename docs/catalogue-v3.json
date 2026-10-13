@@ -1,0 +1,471 @@
+{
+  "schema": 2,
+  "version": 3,
+  "maps": {
+    "DEMO-PROGRESSIVE-001": {
+      "name": "Virages courts (fictif)",
+      "authorMs": 60000,
+      "referenceWrMs": 51000,
+      "timesMs": [
+        59780,
+        57750,
+        53593
+      ],
+      "release": {
+        "kind": "demo"
+      }
+    },
+    "DEMO-PROGRESSIVE-002": {
+      "name": "Sprint millimétré (fictif)",
+      "authorMs": 30000,
+      "referenceWrMs": 29990,
+      "timesMs": [
+        29999,
+        29997,
+        29993
+      ],
+      "release": {
+        "kind": "demo"
+      }
+    },
+    "DEMO-PROGRESSIVE-003": {
+      "name": "Longue descente (fictif)",
+      "authorMs": 120000,
+      "referenceWrMs": 96000,
+      "timesMs": [
+        119414,
+        114000,
+        102914
+      ],
+      "release": {
+        "kind": "demo"
+      }
+    },
+    "ypPmohQofd72MyTsIsijKfrJH98": {
+      "name": "Fall 2026 - 01",
+      "authorMs": 22926,
+      "referenceWrMs": 19991,
+      "timesMs": [
+        22854,
+        22192,
+        20837
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929891,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "kG3Rv5UyAgqu9e05ive6SIOei59": {
+      "name": "Fall 2026 - 02",
+      "authorMs": 22622,
+      "referenceWrMs": 21293,
+      "timesMs": [
+        22590,
+        22290,
+        21676
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929898,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "kFAkAeGS10_LZqazKRtwTClKAWa": {
+      "name": "Fall 2026 - 03",
+      "authorMs": 21975,
+      "referenceWrMs": 18892,
+      "timesMs": [
+        21900,
+        21204,
+        19780
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929905,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "86Gl5t02hAzSD7oiiGjzi9p3wN9": {
+      "name": "Fall 2026 - 04",
+      "authorMs": 23438,
+      "referenceWrMs": 20166,
+      "timesMs": [
+        23358,
+        22620,
+        21109
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929911,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "v96wCr7mP5xEGxNLSnZC6DAp4se": {
+      "name": "Fall 2026 - 05",
+      "authorMs": 23997,
+      "referenceWrMs": 21833,
+      "timesMs": [
+        23944,
+        23456,
+        22456
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929917,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "cLYaG2Zgsxgui3s2GsVLs_KB1e6": {
+      "name": "Fall 2026 - 06",
+      "authorMs": 29175,
+      "referenceWrMs": 26641,
+      "timesMs": [
+        29113,
+        28541,
+        27371
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929924,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "8hy1I_EGrEJQQZS8SN3S3rZoHnj": {
+      "name": "Fall 2026 - 07",
+      "authorMs": 31425,
+      "referenceWrMs": 28605,
+      "timesMs": [
+        31356,
+        30720,
+        29417
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929930,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "6HxhQPmuTq3k9aqLYUCKzyveyrj": {
+      "name": "Fall 2026 - 08",
+      "authorMs": 30316,
+      "referenceWrMs": 27964,
+      "timesMs": [
+        30259,
+        29728,
+        28642
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929936,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "RnjnOu0fwna8i3hjnRT1Wnuxqz2": {
+      "name": "Fall 2026 - 09",
+      "authorMs": 29558,
+      "referenceWrMs": 27534,
+      "timesMs": [
+        29509,
+        29052,
+        28117
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929942,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "bhUUSH5VObphEXdiTefufnQRgqe": {
+      "name": "Fall 2026 - 10",
+      "authorMs": 31298,
+      "referenceWrMs": 29365,
+      "timesMs": [
+        31251,
+        30815,
+        29922
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929948,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "C2gHk3vNJKbcvS9HNkcsZsXDkxf": {
+      "name": "Fall 2026 - 11",
+      "authorMs": 33346,
+      "referenceWrMs": 31056,
+      "timesMs": [
+        33290,
+        32773,
+        31716
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929954,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "02b27YA4k3MWlS50A9TFGZy7Eu": {
+      "name": "Fall 2026 - 12",
+      "authorMs": 33712,
+      "referenceWrMs": 31274,
+      "timesMs": [
+        33652,
+        33102,
+        31976
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929960,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "JBzaNvC881cVdRIF2vHmBXAXX3f": {
+      "name": "Fall 2026 - 13",
+      "authorMs": 31358,
+      "referenceWrMs": 28301,
+      "timesMs": [
+        31283,
+        30594,
+        29182
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929966,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "yMT18290SqZuoemMgbjfTPEIxA": {
+      "name": "Fall 2026 - 14",
+      "authorMs": 39023,
+      "referenceWrMs": 35569,
+      "timesMs": [
+        38939,
+        38159,
+        36564
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929973,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "bYG3jvXV8_FdQvihFN1II3vIU0g": {
+      "name": "Fall 2026 - 15",
+      "authorMs": 31572,
+      "referenceWrMs": 28233,
+      "timesMs": [
+        31490,
+        30737,
+        29195
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929979,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "329LW2no6y6MSODVtejfO19yaMd": {
+      "name": "Fall 2026 - 16",
+      "authorMs": 54678,
+      "referenceWrMs": 51049,
+      "timesMs": [
+        54589,
+        53771,
+        52094
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929985,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "cHm6_B17YvXb9Sb6sJnWKZBzmbi": {
+      "name": "Fall 2026 - 17",
+      "authorMs": 47512,
+      "referenceWrMs": 43632,
+      "timesMs": [
+        47417,
+        46542,
+        44750
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929991,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "DtZod9QxwCN5W1Xb7Q_TpCUrft": {
+      "name": "Fall 2026 - 18",
+      "authorMs": 63702,
+      "referenceWrMs": 59323,
+      "timesMs": [
+        63595,
+        62607,
+        60585
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791929997,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "n08wkWW4wuvFVnlDGhg0EQNtKn8": {
+      "name": "Fall 2026 - 19",
+      "authorMs": 45545,
+      "referenceWrMs": 37390,
+      "timesMs": [
+        45346,
+        43506,
+        39739
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791930003,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "lHHMZkgxAw2Qdhrr7wAcP0x5Nxi": {
+      "name": "Fall 2026 - 20",
+      "authorMs": 46768,
+      "referenceWrMs": 43241,
+      "timesMs": [
+        46682,
+        45886,
+        44257
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791930009,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "eO5YaC9a_wks7nDc2bcIFfk7PB4": {
+      "name": "Egypt 2026",
+      "authorMs": 92795,
+      "referenceWrMs": 68735,
+      "timesMs": [
+        92208,
+        86780,
+        75666
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791930015,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "FUrAZFVkgl9dZKpVFPlpvSf0plc": {
+      "name": "United Kingdom 2026",
+      "authorMs": 95779,
+      "referenceWrMs": 69047,
+      "timesMs": [
+        95126,
+        89096,
+        76748
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791930022,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "V7eUfkrrczwLX33j4geGUglMBT1": {
+      "name": "Czech Republic 2026",
+      "authorMs": 81105,
+      "referenceWrMs": 59788,
+      "timesMs": [
+        80585,
+        75776,
+        65929
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791930028,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "nuLZ3tXpNxiZKOEprMlntvFZFub": {
+      "name": "India 2026",
+      "authorMs": 79480,
+      "referenceWrMs": 62197,
+      "timesMs": [
+        79058,
+        75159,
+        67176
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791930034,
+        "publishedAtUtc": 1791930042
+      }
+    },
+    "Cys52buy8uoYWkwroz7bbrg4_z4": {
+      "name": "New Zealand 2026",
+      "authorMs": 83460,
+      "referenceWrMs": 61005,
+      "timesMs": [
+        82912,
+        77846,
+        67474
+      ],
+      "release": {
+        "kind": "launchCampaign",
+        "anchorAtUtc": 1791925389,
+        "availableAtUtc": 1791928989,
+        "wrCapturedAtUtc": 1791930040,
+        "publishedAtUtc": 1791930042
+      }
+    }
+  },
+  "launchAtUtc": 1791925389
+}

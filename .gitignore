@@ -24,6 +24,8 @@
 !/tools/generate.py
 !/tools/test_generate.py
 !/tools/test_assets.py
+!/tools/test_rebalance.py
+!/tools/rebalance_v4.py
 !/tools/test_publisher.py
 !/tools/publish_fall_2026.py
 !/tools/demo-source.json
@@ -33,3 +35,4 @@
 !/docs/index.html
 !/docs/catalogue.json
 !/docs/catalogue.evidence.json
+!/docs/catalogue-v3.json

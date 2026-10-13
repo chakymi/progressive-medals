@@ -36,7 +36,7 @@ jobs:
           if [ -f docs/catalogue.json ]; then
             echo 'publish=false' >> "$GITHUB_OUTPUT"
             echo 'deploy=true' >> "$GITHUB_OUTPUT"
-            echo 'Version 3 already exists; never recalculate or overwrite it.'
+            echo 'A versioned catalogue already exists; never recalculate the frozen WRs.'
           elif [ "$(date -u +%s)" -lt 1791928989 ]; then
             echo 'publish=false' >> "$GITHUB_OUTPUT"
             echo 'deploy=false' >> "$GITHUB_OUTPUT"
