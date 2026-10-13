@@ -1,9 +1,10 @@
 import tempfile
 from pathlib import Path
 import unittest
+from urllib.error import HTTPError
 
 from generate import publish
-from publish_fall_2026 import NADEO_ACCOUNT, collect, load_roster, write_new
+from publish_fall_2026 import NADEO_ACCOUNT, collect, fetch_json, load_roster, write_new
 
 
 class PublisherTests(unittest.TestCase):
@@ -63,6 +64,35 @@ class PublisherTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):
                 write_new(path, {"version": 3})
             self.assertIn('"version": 2', path.read_text(encoding="utf-8"))
+
+    def test_rate_limit_retry_is_bounded_and_respects_retry_after(self):
+        url = "https://trackmania.io/api/map/RnjnOu0fwna8i3hjnRT1Wnuxqz2"
+        attempts = []
+        delays = []
+        class Response:
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *_): return False
+            def geturl(self): return url
+            def read(self, limit): return b'{"mapUid":"valid"}'
+        def limited(request, timeout):
+            attempts.append(request.full_url)
+            if len(attempts) == 1:
+                raise HTTPError(url, 429, "limit", {"Retry-After": "45"}, None)
+            return Response()
+        self.assertEqual(fetch_json(url, open_request=limited, pause=delays.append), {"mapUid": "valid"})
+        self.assertEqual(len(attempts), 2)
+        self.assertEqual(delays, [45])
+
+    def test_persistent_limit_does_not_generate_catalogue(self):
+        url = "https://trackmania.io/api/map/RnjnOu0fwna8i3hjnRT1Wnuxqz2"
+        calls = []
+        def limited(request, timeout):
+            calls.append(request.full_url)
+            raise HTTPError(url, 429, "limit", {"Retry-After": "1"}, None)
+        with self.assertRaisesRegex(ValueError, "429"):
+            fetch_json(url, open_request=limited, pause=lambda _: None)
+        self.assertEqual(len(calls), 3)
 
 
 if __name__ == "__main__":

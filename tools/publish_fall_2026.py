@@ -13,6 +13,7 @@ import re
 import tempfile
 import time
 from urllib.parse import urlsplit
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from generate import publish
@@ -30,21 +31,34 @@ def utc_now() -> int:
     return int(datetime.now(timezone.utc).timestamp())
 
 
-def fetch_json(url: str) -> dict:
+def fetch_json(url: str, *, open_request=urlopen, pause=time.sleep) -> dict:
     parts = urlsplit(url)
     if parts.scheme != "https" or parts.hostname != "trackmania.io" or parts.username or parts.password:
         raise ValueError("only public Trackmania.io HTTPS endpoints are allowed")
     request = Request(url, headers={"User-Agent": "ProgressiveMedalsPublisher/0.1 (public-read-only)", "Accept": "application/json"})
-    with urlopen(request, timeout=10) as response:
-        if response.status != 200 or urlsplit(response.geturl()).hostname != "trackmania.io":
-            raise ValueError("map/leaderboard endpoint unavailable")
-        body = response.read(MAX_RESPONSE + 1)
-        if len(body) > MAX_RESPONSE:
-            raise ValueError("response too large")
-    data = json.loads(body)
-    if type(data) is not dict:
-        raise ValueError("unexpected JSON response")
-    return data
+    for attempt in range(3):
+        try:
+            with open_request(request, timeout=10) as response:
+                if response.status != 200 or urlsplit(response.geturl()).hostname != "trackmania.io":
+                    raise ValueError("map/leaderboard endpoint unavailable")
+                body = response.read(MAX_RESPONSE + 1)
+                if len(body) > MAX_RESPONSE:
+                    raise ValueError("response too large")
+            data = json.loads(body)
+            if type(data) is not dict:
+                raise ValueError("unexpected JSON response")
+            return data
+        except HTTPError as exc:
+            if exc.code != 429 or attempt == 2:
+                exc.close()
+                raise ValueError(f"supplier HTTP {exc.code}; no catalogue published") from exc
+            retry_after = (exc.headers or {}).get("Retry-After", "")
+            seconds = int(retry_after) if retry_after.isdecimal() else 30 * (attempt + 1)
+            delay = min(120, max(20, seconds))
+            exc.close()
+            print(f"Supplier rate limit (429): waiting {delay}s before a bounded retry", flush=True)
+            pause(delay)
+    raise ValueError("supplier unavailable")
 
 
 def load_roster(path: Path = ROSTER) -> dict:
@@ -88,6 +102,7 @@ def collect(roster: dict, *, capture: bool, now=utc_now, fetch=fetch_json, pause
                 type(info.get("name")) is not str or not 0 < len(info["name"]) <= 160):
             raise ValueError(f"map info mismatch for Fall 2026 - {item['number']:02d}")
         if capture:
+            pause(2.5)  # Two calls per map, well below the supplier's observed rate limit.
             if now() < roster["availableAtUtc"]:
                 raise ValueError("clock moved before allowed capture time")
             wr_url = f"https://trackmania.io/api/leaderboard/map/{uid}?length=1"
@@ -109,7 +124,7 @@ def collect(roster: dict, *, capture: bool, now=utc_now, fetch=fetch_json, pause
                              "wrCapturedAtUtc": captured, "source": wr_url})
         else:
             evidence.append({"number": item["number"], "uid": uid, "authorMs": item["authorMs"]})
-        pause(0.25)  # Never issue 50 requests in one burst.
+        pause(2.5 if capture else 0.25)
     if capture:
         published = now()
         for item in roster["maps"]:
