@@ -4,8 +4,8 @@ bool S_ShowWindow = true;
 [Setting name="Afficher Warrior (si installé)" category="Affichage"]
 bool S_ShowWarrior = true;
 
-[Setting name="Catalogue public HTTPS (facultatif)" description="URL d'un JSON publié, sans jeton ni identifiant. Actualisation manuelle." category="Catalogue"]
-string S_CatalogUrl = "";
+[Setting name="Catalogue public HTTPS (facultatif)" description="Catalogue commun publié par chakymi ; vider pour rester hors ligne." category="Catalogue"]
+string S_CatalogUrl = "https://chakymi.github.io/progressive-medals/catalogue.json";
 
 [Setting name="Rechercher automatiquement les nouvelles versions" description="Une vérification au démarrage puis toutes les heures si une URL HTTPS publique est configurée. Aucun WR individuel n'est interrogé." category="Catalogue"]
 bool S_AutoUpdates = true;
