@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "version": 1,
+  "maps": {
+    "DEMO-PROGRESSIVE-001": {
+      "name": "Virages courts (fictif)",
+      "authorMs": 60000,
+      "referenceWrMs": 51000,
+      "timesMs": [59995, 59932, 59700, 59187, 58320, 57096, 55597, 53986, 52500, 51414]
+    },
+    "DEMO-PROGRESSIVE-002": {
+      "name": "Sprint millimétré (fictif)",
+      "authorMs": 30000,
+      "referenceWrMs": 29990,
+      "timesMs": [29999, 29998, 29997, 29996, 29995, 29994, 29993, 29992, 29991, 29990]
+    },
+    "DEMO-PROGRESSIVE-003": {
+      "name": "Longue descente (fictif)",
+      "authorMs": 120000,
+      "referenceWrMs": 96000,
+      "timesMs": [119987, 119818, 119200, 117832, 115521, 112257, 108258, 103963, 100001, 97105]
+    }
+  }
+}

@@ -1,0 +1,8 @@
+[meta]
+name = "Progressive Medals"
+author = "chakymi"
+category = "Race"
+version = "0.2.0"
+
+[script]
+optional_dependencies = [ "UltimateMedalsExtended", "WarriorMedals" ]

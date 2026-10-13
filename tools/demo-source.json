@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "maps": {
+    "DEMO-PROGRESSIVE-001": {"name": "Virages courts (fictif)", "authorMs": 60000, "referenceWrMs": 51000},
+    "DEMO-PROGRESSIVE-002": {"name": "Sprint millimétré (fictif)", "authorMs": 30000, "referenceWrMs": 29990},
+    "DEMO-PROGRESSIVE-003": {"name": "Longue descente (fictif)", "authorMs": 120000, "referenceWrMs": 96000}
+  }
+}

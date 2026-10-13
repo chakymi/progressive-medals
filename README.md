@@ -1,0 +1,83 @@
+# Progressive Medals — prototype Openplanet (Trackmania 2020)
+
+Plugin natif AngelScript dans [`plugin/`](plugin/), indépendant de tout serveur. Le catalogue embarqué **ne contient que trois UID fictifs** : il permet de tester l'interface, mais ne décerne aucune médaille sur les vraies cartes tant qu'un catalogue contenant leurs UID n'est pas publié. Les **trois** objectifs Platine → Émeraude → Diamant sont identiques pour tous les joueurs utilisant la même version du catalogue ; Champion reste une référence externe distincte, jamais utilisée pour leur calcul. Il n'est donc pas garanti que Diamant soit toujours plus facile que Champion. Le WR utilisé pour la génération est figé ; la fenêtre ne recalcule jamais les seuils.
+
+## Installer et vérifier dans le jeu
+
+1. Installer Trackmania 2020 et [Openplanet](https://openplanet.dev/docs/tutorials/installation). Le chargement d'un plugin non signé nécessite le mode **Developer** et, selon [la documentation Openplanet](https://openplanet.dev/docs/tutorials/writing-plugins), **Club Edition**. Dans le jeu, ouvrir Openplanet avec **F3**, puis `Openplanet → Signature Mode → Developer` ; redémarrer si nécessaire. Ce mode active aussi [School Mode](https://openplanet.dev/docs/school-mode) : les nouveaux temps ne sont généralement pas enregistrés dans les classements officiels.
+2. Dans F3, ouvrir le dossier utilisateur Openplanet, puis `Plugins` (habituellement `%USERPROFILE%\OpenplanetNext\Plugins`). Copier **uniquement le dossier `plugin`** de ce projet sous le nom `ProgressiveMedals` : on doit obtenir `Plugins\ProgressiveMedals\info.toml`, `Main.as`, `Catalog.as`, `Medals.as`, `Window.as`, `UME.as`, `catalog\catalog-v2.json` et les trois PNG de `assets/`. Ne pas copier `tools/`. Le fichier `catalog-v1.json` est conservé pour les tests historiques, mais n'est plus chargé par la nouvelle version.
+3. Ouvrir `F3 → Developer`, charger `Progressive Medals` ; ouvrir sa fenêtre par le menu `Progressive Medals`. Lire les éventuelles erreurs de compilation dans la console/journal Openplanet.
+4. Cliquer `Vérifier le chargeur` : attendre `Chargeur v2 OK : 3 paliers, doublon et WR anticipé refusés`. Puis cliquer `Voir les cartes fictives` et `Carte suivante` : trois temps ordonnés s'affichent pour chacune des trois cartes. Saisir `59780` puis `53593` dans le PB fictif de la première carte : vérifier Platine, Émeraude, Diamant, le prochain objectif et l'écart. Saisir `0` pour l'état sans PB. La deuxième carte teste un écart Auteur–WR de 10 ms.
+5. Cliquer `Revenir à la carte`, charger une **vraie carte** : nom, UID, temps Auteur et PB officiel déjà enregistré (s'il est accessible en TimeAttack) doivent apparaître, mais aucun objectif pour cet UID fictif. Changer de carte pour vérifier la réinitialisation. En School Mode, le résultat d'une nouvelle course peut apparaître sur l'écran d'arrivée sans être enregistré comme PB officiel ; le plugin ne le présente pas comme tel.
+6. Facultatif : installer Ultimate Medals Extended et Warrior Medals. Recharger le plugin ; UME peut afficher les trois niveaux pour les UID publiés, Warrior est affiché séparément quand il dispose déjà d'un temps en cache. Vérifier leur compatibilité sur une vraie carte **après publication d'un vrai UID**. Champion reste explicitement désactivé jusqu'à vérification de son interface publique officielle.
+
+L'ancienne version à dix niveaux a été chargée dans Trackmania/Openplanet : trois démos, décodeur réel, PB officiels préexistants et changement de carte ont fonctionné selon les captures reçues. La version du calendrier a ensuite été copiée, rechargée et son test « WR anticipé refusé » confirmé. **La refonte à trois niveaux et l'actualisation horaire HTTPS ne sont actuellement que dans les sources locales : elles doivent être copiées et recompilées en jeu.** Le mode démo ne modifie ni les résultats ni les médailles natives du jeu.
+
+## Règle commune d'apparition (UTC)
+
+| `release.kind` | Point de départ commun (`anchorAtUtc`) | Heure minimale de relevé du WR et de publication |
+| --- | --- | --- |
+| `campaign` | ouverture officielle de la campagne | + 604 800 s = 7 jours |
+| `totd` | ouverture officielle du circuit du jour | + 3 600 s = 1 heure |
+| `launchCampaign` | lancement commun fixé **une seule fois** pour la campagne déjà en cours | + 3 600 s = 1 heure |
+
+L'heure d'installation locale **n'est jamais** un point de départ. À l'heure minimale, l'éditeur du catalogue relève un WR public et l'horodate (`wrCapturedAtUtc`), génère trois seuils et publie le même JSON pour tous (`publishedAtUtc`). Si le relevé ou la publication a du retard, la carte n'a pas d'objectifs tant que le JSON n'est pas publié ; aucun temps provisoire n'est inventé. Le décodeur vérifie que `availableAtUtc = anchorAtUtc + délai`, que le WR a été capturé à cette heure ou après et que la publication n'a pas précédé le relevé. Le générateur refuse également une date de publication dans le futur. Le client masque les seuils avant leur date de publication ; UME applique le même contrôle. Le WR n'est jamais demandé depuis le jeu pour générer un objectif. Champion reste indépendant.
+
+Pour Fall 2026 (exception `launchCampaign`), l'auteur a fixé le **T0 commun au 13 octobre 2026 à 21:03:09 UTC**, soit `launchAtUtc = 1791925389`. L'heure minimale de relevé des WR est le **13 octobre 2026 à 22:03:09 UTC**, soit `availableAtUtc = 1791928989`. Cette heure n'est liée à aucune installation individuelle. **Aucun WR final n'a encore été relevé ni publié** : les UID réels ne figurent pas dans le catalogue. Relever les WR à partir de l'heure minimale, horodater réellement leur capture, puis préparer le premier catalogue commun de vraies cartes.
+
+### Préparation automatique des 25 cartes Fall 2026
+
+`tools/fall-2026-roster.json` contient les **25 UID et temps Auteur** préparés depuis les fiches Trackmania Exchange (cartes 01–20 et 21–25, ces dernières portant des noms de pays). `python -B tools/publish_fall_2026.py --check-roster` vérifie à nouveau **chaque UID, auteur et provenance Nadeo** via les 25 fiches publiques Trackmania.io ; cela n'interroge aucun WR et peut se faire avant T0+1 h.
+
+À partir de **22:03:09 UTC seulement**, `python -B tools/publish_fall_2026.py --publish` interroge les 25 classements publics Trackmania.io une seule fois, horodate chaque relevé, refuse les cartes manquantes, un auteur modifié, un WR non classé premier ou un écart inférieur à **3 ms** ; puis génère `catalogue-fall-2026-v3.json` (25 cartes et 3 démos, trois objectifs chacune) et `catalogue-fall-2026-v3.evidence.json` (UID, WR, date et URL de source). En cas d'échec, **aucun catalogue partiel** n'est créé. Une version 3 déjà présente n'est jamais écrasée par un WR plus récent. L'option `--wait --publish` permet de laisser le script ouvert avant l'heure minimale : il attend puis tente **une fois** la capture. Le PC doit rester allumé et le script en cours ; aucun déclencheur Windows n'est installé automatiquement.
+
+Ces commandes CLI produisent des fichiers **locaux uniquement**. Elles ne téléchargent aucun jeton d'authentification, ne modifient pas le plugin installé, n'ouvrent aucun serveur, ne publient rien sur Internet et ne créent pas de tâche planifiée. Pour une distribution identique et automatique, le catalogue doit être placé sur **une URL HTTPS publique unique** ; le workflow décrit ci-dessous devra être activé et sa publication contrôlée en jeu après le premier lancement. Avec une telle URL configurée, le plugin peut vérifier les mises à jour au démarrage et au plus une fois par heure (en plus du bouton manuel) ; sans URL, **aucune mise à jour automatique n'a lieu**. Le script pour les **futurs** TOTD et campagnes reste à développer ; les délais sont déjà imposés par le catalogue.
+
+### Dépôt GitHub public : préparation locale, pas encore connecté
+
+Une liste positive `.gitignore` ne retient que les sources/JSON publics et `.github/workflows/publish-fall-2026.yml` ; la note privée du Second Cerveau, caches, secrets éventuels et fichiers locaux produits hors `docs/` sont exclus. Le workflow GitHub prévu lance les tests, puis vérifie **chaque heure à la minute 17 UTC** si T0+1 h est passé. Au premier passage admissible, il tente le lot complet de 25 cartes, puis enregistre uniquement `docs/catalogue.json` et `docs/catalogue.evidence.json` dans la branche `main` et déploie **seulement `docs/`** sur GitHub Pages. Une fois le fichier v3 présent, il ne le recalcule jamais ; il peut retenter le déploiement Pages si celui-ci a échoué. Un échec de fournisseur fait échouer la tentative ; le passage suivant peut réessayer. Les exécutions planifiées de GitHub peuvent être retardées : la publication aura lieu **après** l'heure minimale, pas forcément exactement à 22:03:09 UTC. Aucune clé Nadeo ni jeton personnel requis pour ces deux endpoints publics Trackmania.io ; GitHub fournit son jeton de workflow pour écrire dans son propre dépôt.
+
+Pour que cela fonctionne réellement, il faudra créer le dépôt GitHub **public** dédié, publier les fichiers retenus, puis activer GitHub Pages avec source **GitHub Actions** dans les réglages du dépôt. L'adresse commune prendra la forme `https://NOM-DU-COMPTE.github.io/progressive-medals/catalogue.json` ; elle n'est pas encore active. Après sa mise en ligne, configurer cette URL dans les réglages Openplanet : le client actualisera le catalogue au démarrage puis au plus une fois par heure. Le workflow ne traite que **Fall 2026** : l'automatisation des saisons et TOTD suivants demandera un producteur supplémentaire, sans demander à chaque joueur de calculer son WR.
+
+## Publier des cartes réelles
+
+1. Après la date définie ci-dessus, relever l'UID réel, le temps Auteur en ms et le WR à cet instant, avec source et date UTC. Créer un **nouveau** JSON source de schéma 2 avec `version` **3 minimum**, les cartes voulues et les trois démos si leur mode doit rester utilisable. Laisser au moins **3 ms** entre WR et Auteur. Une carte éditée avec le même UID mais un nouveau temps Auteur est désactivée par sécurité jusqu'à publication corrigée.
+2. Depuis ce dossier, exécuter `python tools/generate.py source-v3.json catalogue-public.json --power 2`. `power` est un entier de 1 à 4 : smoothstep élevé à cette puissance ; la correction en entiers garantit exactement trois temps distincts, strictement décroissants et dans l'intervalle `[WR, Auteur[`. Un écart de moins de 3 ms échoue explicitement. Le générateur contrôle aussi l'heure UTC courante : un fichier antidaté ou préparé à l'avance échoue.
+3. Vérifier le JSON, le WR et les UID **avant** distribution. Pour un usage hors ligne, remplacer `plugin/catalog/catalog-v2.json` par le catalogue validé (conserver le nom du fichier). Pour les mises à jour automatiques ou manuelles : héberger le JSON sur un HTTPS public en lecture seule, renseigner son URL dans les réglages Openplanet ; la vérification automatique se fait au démarrage puis chaque heure, ou via `Actualiser le catalogue HTTPS`. Sans URL, aucune requête n'est lancée ; le cache est dans le dossier de stockage propre au plugin. La mise à jour est limitée à une tentative/5 min, 12 s, 512 Kio. Seules les versions strictement croissantes remplacent l'état actif. Si le téléchargement ou le JSON échoue, l'ancien catalogue reste actif.
+4. Une installation hors ligne embarquant une nouvelle version doit remplacer la version précédente du JSON. Une installation ayant déjà reçu une version plus récente en cache garde celle-ci, même hors ligne.
+
+Source de génération, pour une carte **fictive d'illustration** :
+
+```json
+{
+  "schema": 2,
+  "version": 3,
+  "launchAtUtc": 1800000000,
+  "maps": {
+    "EXAMPLE-UID-NOT-REAL": {
+      "name": "Exemple (fictif)", "authorMs": 60000, "referenceWrMs": 51000,
+      "release": {
+        "kind": "launchCampaign", "anchorAtUtc": 1800000000,
+        "wrCapturedAtUtc": 1800003600, "publishedAtUtc": 1800003600
+      }
+    }
+  }
+}
+```
+
+Les horodatages sont des **secondes Unix UTC**, pas des millisecondes. Pour une nouvelle campagne ou un TOTD, utiliser `kind: "campaign"` ou `"totd"` et prendre pour `anchorAtUtc` l'ouverture officielle correspondante ; `launchAtUtc` ne s'applique qu'à l'exception de la campagne en cours. La sortie ajoute `availableAtUtc` calculé et `timesMs` ; les démos dans un catalogue de schéma 2 emploient `"release":{"kind":"demo"}`. Le schéma 1 version 1 conserve l'ancienne démo à dix niveaux **uniquement comme historique local** ; la version 2 contient les démos actuelles à trois paliers. Les niveaux sont ordonnés Platine → Émeraude → Diamant. Les PNG fournis par chakymi se trouvent dans `plugin/assets/` et sont chargés une fois par `UI::LoadTexture`, puis affichés dans la fenêtre via `UI::Image` ; les badges texte 01–03 servent de repli si une texture est indisponible. Leurs inscriptions intégrées sont en anglais (PLATINUM/EMERALD/DIAMOND) tandis que les libellés de la fenêtre restent en français. L'API publique IMedal d'UME ne prévoit qu'une icône textuelle : un cercle reste utilisé dans cette intégration facultative.
+
+## Architecture et contrôles
+
+| Fichier | Rôle |
+| --- | --- |
+| `plugin/Main.as` | cycle de vie, détection de carte/PB et paramètres |
+| `plugin/Catalog.as` | validation atomique, cache, HTTPS facultatif |
+| `plugin/Medals.as`, `plugin/Window.as` | noms, attribution, affichage |
+| `plugin/assets/` | trois PNG originaux fournis par chakymi |
+| `plugin/UME.as` | adaptateur facultatif `IMedal` |
+| `tools/generate.py` | calcul hors jeu en fractions exactes, aucune dépendance externe |
+
+Vérification locale : `python -B -m unittest discover -s tools -p 'test_*.py' -v`. Les tests contrôlent écarts serrés, bornes, déterminisme, calendrier, publication prématurée, lot complet de 25 cartes, concordance de la nouvelle démo, conservation du catalogue historique v1 et intégrité/dimensions/alpha des trois PNG. Le bouton `Vérifier le chargeur` avait testé le décodeur précédent en jeu ; **la refonte à trois médailles, les PNG et l'actualisation HTTPS horaire doivent encore être copiés et compilés dans Openplanet**. UME et le cache HTTPS n'ont pas encore été validés en jeu.
+
+Références : [API Openplanet](https://openplanet.dev/docs/api), [dépendances facultatives](https://openplanet.dev/docs/tutorials/plugin-dependencies), [interface IMedal UME](https://github.com/ArEyeses79/tm-ultimate-medals-extended/blob/HEAD/Medals/IMedal.as), [exports UME](https://github.com/ArEyeses79/tm-ultimate-medals-extended/blob/HEAD/Exports.as), [exports Warrior](https://github.com/ezio416/tm-warrior-medals/blob/HEAD/src/Export.as). Aucun appel à l'API privée Champion.

@@ -1,0 +1,33 @@
+{
+  "campaign": "Fall 2026",
+  "launchAtUtc": 1791925389,
+  "availableAtUtc": 1791928989,
+  "source": "https://trackmania.exchange/mapsearch2/search?api=on&trackname=Fall%202026&format=json (01-20), https://trackmania.exchange/api/maps/get_map_info/id/{trackId} (21-25); UID and author to be rechecked against Trackmania.io",
+  "maps": [
+    {"number": 1, "uid": "ypPmohQofd72MyTsIsijKfrJH98", "authorMs": 22926, "tmxId": 361913},
+    {"number": 2, "uid": "kG3Rv5UyAgqu9e05ive6SIOei59", "authorMs": 22622, "tmxId": 361914},
+    {"number": 3, "uid": "kFAkAeGS10_LZqazKRtwTClKAWa", "authorMs": 21975, "tmxId": 361915},
+    {"number": 4, "uid": "86Gl5t02hAzSD7oiiGjzi9p3wN9", "authorMs": 23438, "tmxId": 361916},
+    {"number": 5, "uid": "v96wCr7mP5xEGxNLSnZC6DAp4se", "authorMs": 23997, "tmxId": 361917},
+    {"number": 6, "uid": "cLYaG2Zgsxgui3s2GsVLs_KB1e6", "authorMs": 29175, "tmxId": 361918},
+    {"number": 7, "uid": "8hy1I_EGrEJQQZS8SN3S3rZoHnj", "authorMs": 31425, "tmxId": 361919},
+    {"number": 8, "uid": "6HxhQPmuTq3k9aqLYUCKzyveyrj", "authorMs": 30316, "tmxId": 361920},
+    {"number": 9, "uid": "RnjnOu0fwna8i3hjnRT1Wnuxqz2", "authorMs": 29558, "tmxId": 361921},
+    {"number": 10, "uid": "bhUUSH5VObphEXdiTefufnQRgqe", "authorMs": 31298, "tmxId": 361922},
+    {"number": 11, "uid": "C2gHk3vNJKbcvS9HNkcsZsXDkxf", "authorMs": 33346, "tmxId": 361923},
+    {"number": 12, "uid": "02b27YA4k3MWlS50A9TFGZy7Eu", "authorMs": 33712, "tmxId": 361925},
+    {"number": 13, "uid": "JBzaNvC881cVdRIF2vHmBXAXX3f", "authorMs": 31358, "tmxId": 361927},
+    {"number": 14, "uid": "yMT18290SqZuoemMgbjfTPEIxA", "authorMs": 39023, "tmxId": 361928},
+    {"number": 15, "uid": "bYG3jvXV8_FdQvihFN1II3vIU0g", "authorMs": 31572, "tmxId": 361929},
+    {"number": 16, "uid": "329LW2no6y6MSODVtejfO19yaMd", "authorMs": 54678, "tmxId": 361930},
+    {"number": 17, "uid": "cHm6_B17YvXb9Sb6sJnWKZBzmbi", "authorMs": 47512, "tmxId": 361931},
+    {"number": 18, "uid": "DtZod9QxwCN5W1Xb7Q_TpCUrft", "authorMs": 63702, "tmxId": 361932},
+    {"number": 19, "uid": "n08wkWW4wuvFVnlDGhg0EQNtKn8", "authorMs": 45545, "tmxId": 361933},
+    {"number": 20, "uid": "lHHMZkgxAw2Qdhrr7wAcP0x5Nxi", "authorMs": 46768, "tmxId": 361934},
+    {"number": 21, "uid": "eO5YaC9a_wks7nDc2bcIFfk7PB4", "authorMs": 92795, "tmxId": 361935},
+    {"number": 22, "uid": "FUrAZFVkgl9dZKpVFPlpvSf0plc", "authorMs": 95779, "tmxId": 361936},
+    {"number": 23, "uid": "V7eUfkrrczwLX33j4geGUglMBT1", "authorMs": 81105, "tmxId": 361937},
+    {"number": 24, "uid": "nuLZ3tXpNxiZKOEprMlntvFZFub", "authorMs": 79480, "tmxId": 361938},
+    {"number": 25, "uid": "Cys52buy8uoYWkwroz7bbrg4_z4", "authorMs": 83460, "tmxId": 361939}
+  ]
+}
