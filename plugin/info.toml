@@ -2,7 +2,8 @@
 name = "Progressive Medals"
 author = "chakymi"
 category = "Race"
-version = "0.2.0"
+version = "0.3.0"
 
 [script]
-optional_dependencies = [ "UltimateMedalsExtended", "WarriorMedals" ]
+dependencies = [ "NadeoServices" ]
+optional_dependencies = [ "UltimateMedalsExtended", "WarriorMedals", "ChampionMedals" ]

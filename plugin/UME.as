@@ -14,7 +14,7 @@ class PM_UmeMedal : UltimateMedalsExtended::IMedal {
     void UpdateMedal(const string &in mapUid) override { uid = mapUid; }
     bool HasMedalTime(const string &in mapUid) override {
         PM::MapGoals@ goals = PM::FindGoals(mapUid);
-        return PM::IsReleased(goals) && PM::currentUid == mapUid && PM::currentAuthor == goals.authorMs;
+        return PM::IsReleased(goals) && PM::currentUid == mapUid && PM::MatchesAuthor(goals, PM::currentAuthor);
     }
     uint GetMedalTime() override {
         PM::MapGoals@ goals = PM::FindGoals(uid);

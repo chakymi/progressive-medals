@@ -23,6 +23,8 @@ namespace PM {
         uint authorMs;
         uint referenceWrMs;
         uint[] times;
+        uint calculationVersion = 4; // Historical AT/WR catalogue; 5 = exact world ranks.
+        string source = "catalogue historique";
         // Schema 1 is reserved for the three bundled fictitious maps.
         string releaseKind = "demo";
         int64 availableAtUtc = 0;
@@ -31,6 +33,10 @@ namespace PM {
 
     bool IsReleased(const MapGoals@ goals) {
         return goals !is null && Time::Stamp >= goals.availableAtUtc && Time::Stamp >= goals.publishedAtUtc;
+    }
+
+    bool MatchesAuthor(const MapGoals@ goals, uint author) {
+        return goals !is null && (goals.calculationVersion >= 5 || (author != 0 && author == goals.authorMs));
     }
 
     string FormatTime(uint ms) {

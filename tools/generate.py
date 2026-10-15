@@ -1,8 +1,9 @@
-"""Offline publisher: immutable integer-millisecond goals from author and snapshot WR.
+"""Historical AT/WR publisher (versions 1-4 only; never use for new maps).
 
 Usage: python tools/generate.py input.json output.json --power 2
-Catalogue versions 1-3 keep their historical smoothstep formula. Version 4+
-uses 30/60/90 percent of the same frozen Author-to-WR interval (no Champion).
+Catalogue versions 1-3 keep their historical smoothstep formula. Version 4
+uses 30/60/90 percent of the frozen Author-to-WR interval (no Champion).
+Version 5+ uses the independent world-rank publisher, never this generator.
 The generated JSON is reviewable before publication; never generated in the plugin.
 """
 import argparse
@@ -101,6 +102,8 @@ def goals_linear(author_ms: int, wr_ms: int) -> list[int]:
 def publish(source: dict, power: int = 2, now_utc: int | None = None) -> dict:
     if type(source) is not dict or type(source.get("version")) is not int or not 1 <= source["version"] <= 1_000_000:
         raise ValueError("positive integer version required")
+    if source["version"] >= 5:
+        raise ValueError("AT/WR goals are historical only; use exact world ranks for version 5+")
     if source["version"] >= 4 and power != 2:
         raise ValueError("--power applies only to historical smoothstep versions 1-3")
     schema = source.get("schema", 1)

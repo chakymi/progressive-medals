@@ -1,0 +1,38 @@
+name: Check new world-rank medals
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: progressive-medals-world-rank-publisher
+  cancel-in-progress: false
+
+jobs:
+  check-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      SUPABASE_URL: ${{ secrets.PM_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.PM_SUPABASE_SECRET_KEY }}
+      PM_NADEO_SERVICE_LOGIN: ${{ secrets.PM_NADEO_SERVICE_LOGIN }}
+      PM_NADEO_SERVICE_PASSWORD: ${{ secrets.PM_NADEO_SERVICE_PASSWORD }}
+      PM_WORLD_RANK_START_UTC: ${{ vars.PM_WORLD_RANK_START_UTC }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test publisher
+        run: python -B -m unittest discover -s tools -p 'test_*.py' -q
+      - name: Discover Nadeo campaigns/TOTDs if authenticated and publish eligible maps
+        if: env.SUPABASE_URL != '' && env.SUPABASE_SECRET_KEY != ''
+        shell: bash
+        run: |
+          if [ -n "$PM_NADEO_SERVICE_LOGIN" ] && [ -n "$PM_NADEO_SERVICE_PASSWORD" ]; then
+            python -B tools/world_rank_publisher.py --manifest tools/world-rank-manifest.json --discover
+          else
+            python -B tools/world_rank_publisher.py --manifest tools/world-rank-manifest.json
+          fi

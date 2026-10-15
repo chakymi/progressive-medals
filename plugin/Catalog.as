@@ -5,6 +5,18 @@ namespace PM {
     string catalogError = "";
     const string BUNDLED = "catalog/catalog-v2.json";
     const string CACHE = "catalog-cache.json";
+    const string WORLD_CACHE = "world-catalog-cache.json";
+    const string WORLD_RPC = "https://mfopepdzllvyefwnxvqh.supabase.co/rest/v1/rpc/pm_public_catalog";
+    // Publishable (anonymous) API key, already part of RankUp's public web client.
+    // The private service-role key is NEVER distributed in the plugin.
+    const string WORLD_PUBLIC_KEY = "sb_publishable_bX6Orw7rrrBGZrgjehzWgA_jq4R2nhN";
+    dictionary worldCatalog;
+    dictionary worldStatus;
+    dictionary worldDue;
+    uint worldVersion = 0;
+    string worldError = "";
+    bool worldDownloading = false;
+    uint64 worldLastAttempt = 0;
     const uint MAX_CATALOG_BYTES = 524288;
     const int64 EARLIEST_UTC = 1609459200; // 2021-01-01 UTC
     const int64 LATEST_UTC = 4102444800; // 2100-01-01 UTC
@@ -125,8 +137,13 @@ namespace PM {
             warn("Progressive Medals: catalogue rejeté (" + catalogError + ")");
             return false;
         }
-        if (version <= catalogVersion) {
-            if (source != "cache") catalogError = "version déjà présente ou antérieure : incrémenter la version";
+        if (version == catalogVersion) {
+            // Re-reading the same immutable public version is a normal no-op.
+            if (source != "cache") catalogError = "";
+            return false;
+        }
+        if (version < catalogVersion) {
+            if (source != "cache") catalogError = "version antérieure ignorée";
             return false;
         }
         if (persist) {
@@ -153,8 +170,199 @@ namespace PM {
 
     MapGoals@ FindGoals(const string &in uid) {
         MapGoals@ result;
-        if (uid.Length > 0) catalog.Get(uid, @result);
+        // Published v4 is immutable. A later world catalogue cannot shadow it.
+        if (uid.Length > 0 && !catalog.Get(uid, @result)) worldCatalog.Get(uid, @result);
         return result;
+    }
+
+    string WorldStatusFor(const string &in uid) {
+        string status;
+        worldStatus.Get(uid, status);
+        return status;
+    }
+
+    int64 WorldDueFor(const string &in uid) {
+        int64 due = 0;
+        worldDue.Get(uid, due);
+        return due;
+    }
+
+    bool DecodeWorld(const Json::Value@ root, dictionary &out goals, dictionary &out statuses,
+                     dictionary &out dueDates, uint &out version, string &out reason) {
+        reason = "";
+        if (root is null || root.GetType() != Json::Type::Object || !root.HasKey("schema") ||
+                double(root.Get("schema")) != 3.0 || !root.HasKey("version") || !root.HasKey("maps")) {
+            reason = "schéma mondial absent"; return false;
+        }
+        const Json::Value@ v = root.Get("version");
+        const Json::Value@ maps = root.Get("maps");
+        if (v is null || v.GetType() != Json::Type::Number || double(v) < 5 || double(v) > 2000000000 ||
+                double(v) != double(uint(double(v))) || maps is null || maps.GetType() != Json::Type::Object || maps.Length > 5000) {
+            reason = "version/cartes mondiales invalides"; return false;
+        }
+        version = uint(double(v));
+        string[]@ keys = maps.GetKeys();
+        for (uint k = 0; k < keys.Length; k++) {
+            string uid = keys[k];
+            if (uid.Length < 20 || uid.Length > 40) { reason = "UID mondial invalide"; return false; }
+            for (uint c = 0; c < uid.Length; c++) {
+                uint8 ch = uid[c];
+                if (!((ch >= 48 && ch <= 57) || (ch >= 65 && ch <= 90) ||
+                      (ch >= 97 && ch <= 122) || ch == 95)) { reason = "UID mondial invalide"; return false; }
+            }
+            const Json::Value@ entry = maps.Get(uid);
+            if (entry is null || entry.GetType() != Json::Type::Object || !entry.HasKey("name") ||
+                    !entry.HasKey("status") || !entry.HasKey("mapType") || !entry.HasKey("calculationVersion")) {
+                reason = "entrée mondiale incomplète"; return false;
+            }
+            const Json::Value@ title = entry.Get("name");
+            const Json::Value@ state = entry.Get("status");
+            const Json::Value@ kind = entry.Get("mapType");
+            const Json::Value@ calc = entry.Get("calculationVersion");
+            if (title is null || title.GetType() != Json::Type::String || string(title).Length == 0 ||
+                    string(title).Length > 160 || state is null || state.GetType() != Json::Type::String ||
+                    kind is null || kind.GetType() != Json::Type::String ||
+                    (string(kind) != "campaign" && string(kind) != "totd") ||
+                    calc is null || calc.GetType() != Json::Type::Number || double(calc) != 5) {
+                reason = "métadonnées mondiales invalides"; return false;
+            }
+            int64 released = 0;
+            int64 eligible = 0;
+            if (!ReadStamp(entry, "releaseAtUtc", released) || !ReadStamp(entry, "eligibleAtUtc", eligible) ||
+                    released > LATEST_UTC - 604800 || eligible != released + (string(kind) == "campaign" ? 604800 : 3600)) {
+                reason = "délai mondial incohérent"; return false;
+            }
+            uint players = 0;
+            const Json::Value@ count = entry.Get("playerCount");
+            if (count !is null && count.GetType() != Json::Type::Null) {
+                if (count.GetType() != Json::Type::Number || double(count) < 0 ||
+                        double(count) > 1000000000 || double(count) != double(uint(double(count)))) {
+                    reason = "nombre de joueurs mondial invalide"; return false;
+                }
+                players = uint(double(count));
+            }
+            string status = string(state);
+            if (status == "published") {
+                uint wr = 0;
+                int64 captured = 0;
+                int64 published = 0;
+                const Json::Value@ times = entry.Get("timesMs");
+                const Json::Value@ source = entry.Get("source");
+                int64 due = 0;
+                int64 threshold = 0;
+                if (players < 5000 || !ReadStamp(entry, "captureDueAtUtc", due) ||
+                        !ReadStamp(entry, "thresholdDetectedAtUtc", threshold) ||
+                        (due != eligible && due != threshold + 3600) ||
+                        !ReadInt(entry, "referenceWrMs", wr) || !ReadStamp(entry, "capturedAtUtc", captured) ||
+                        !ReadStamp(entry, "publishedAtUtc", published) || captured < eligible || published < captured ||
+                        captured < due ||
+                        times is null || times.GetType() != Json::Type::Array || times.Length != COUNT ||
+                        source is null || source.GetType() != Json::Type::String ||
+                        string(source) != "trackmania.io/world-map-leaderboard") {
+                    reason = "publication mondiale incomplète"; return false;
+                }
+                MapGoals@ goal = MapGoals();
+                goal.uid = uid; goal.name = string(title); goal.referenceWrMs = wr;
+                goal.calculationVersion = 5; goal.source = string(source);
+                goal.releaseKind = string(kind); goal.availableAtUtc = eligible; goal.publishedAtUtc = published;
+                uint previous = MAX_TIME;
+                for (uint i = 0; i < COUNT; i++) {
+                    const Json::Value@ t = times[i];
+                    if (t is null || t.GetType() != Json::Type::Number || double(t) != double(uint(double(t))) ||
+                            double(t) < double(wr) || double(t) > double(previous)) {
+                        reason = "rangs mondiaux incohérents"; return false;
+                    }
+                    previous = uint(double(t)); goal.times.InsertLast(previous); // Exact ties are allowed.
+                }
+                goals.Set(uid, @goal);
+            } else if (status == "waiting_initial_delay" || status == "waiting_for_players" ||
+                       status == "waiting_extra_hour" || status == "ready_to_capture" ||
+                       status == "temporarily_unavailable") {
+                const Json::Value@ times = entry.Get("timesMs");
+                if (times !is null && times.GetType() != Json::Type::Null) {
+                    reason = "objectifs prématurés"; return false;
+                }
+                int64 due = 0;
+                if (entry.HasKey("captureDueAtUtc")) {
+                    const Json::Value@ date = entry.Get("captureDueAtUtc");
+                    if (date !is null && date.GetType() != Json::Type::Null &&
+                            (!ReadStamp(entry, "captureDueAtUtc", due) || due < eligible)) {
+                        reason = "heure de capture invalide"; return false;
+                    }
+                }
+                dueDates.Set(uid, due);
+            } else { reason = "état mondial inconnu"; return false; }
+            statuses.Set(uid, status);
+        }
+        return true;
+    }
+
+    bool InstallWorld(const Json::Value@ root, bool persist) {
+        dictionary next;
+        dictionary statuses;
+        dictionary dates;
+        uint version = 0;
+        string reason;
+        if (!DecodeWorld(root, next, statuses, dates, version, reason)) {
+            worldError = "Catalogue mondial refusé : " + reason; return false;
+        }
+        if (version <= worldVersion) return false;
+        if (persist) {
+            try { Json::ToFile(IO::FromStorageFolder(WORLD_CACHE), root); }
+            catch { warn("Progressive Medals: cache mondial non écrit : " + getExceptionInfo()); }
+        }
+        worldCatalog = next; worldStatus = statuses; worldDue = dates; worldVersion = version; worldError = "";
+        return true;
+    }
+
+    void LoadWorldCache() {
+        string path = IO::FromStorageFolder(WORLD_CACHE);
+        if (IO::FileExists(path) && IO::FileSize(path) <= MAX_CATALOG_BYTES) {
+            try { InstallWorld(Json::FromFile(path), false); }
+            catch { warn("Progressive Medals: cache mondial illisible : " + getExceptionInfo()); }
+        }
+    }
+
+    void WorldRefreshLoop() {
+        while (true) {
+            if (S_AutoUpdates && S_WorldCatalogUrl.Length > 0 && !worldDownloading) RefreshWorld();
+            sleep(3600000);
+        }
+    }
+
+    void RefreshWorld() {
+        if (worldDownloading || S_WorldCatalogUrl.Length == 0 || !S_WorldCatalogUrl.StartsWith("https://") ||
+                S_WorldCatalogUrl.Contains("@") || S_WorldCatalogUrl.Contains("#") ||
+                S_WorldCatalogUrl.Contains("?") || S_WorldCatalogUrl.Contains(" ")) {
+            worldError = "URL HTTPS mondiale publique requise"; return;
+        }
+        if (worldLastAttempt != 0 && Time::Now - worldLastAttempt < 300000) {
+            worldError = "attendre 5 minutes entre les actualisations"; return;
+        }
+        worldLastAttempt = Time::Now; worldDownloading = true;
+        try {
+            Net::HttpRequest@ request;
+            if (S_WorldCatalogUrl == WORLD_RPC) {
+                @request = Net::HttpRequest(S_WorldCatalogUrl);
+                request.Redirect = false; // Never forward even a public project key elsewhere.
+                request.Headers.Set("apikey", WORLD_PUBLIC_KEY);
+                request.Start();
+            } else {
+                @request = Net::HttpGet(S_WorldCatalogUrl); // Alternative public HTTPS JSON URL.
+            }
+            uint64 started = Time::Now;
+            while (!request.Finished()) {
+                if (Time::Now - started > 12000 || request.ProgressDownload() > MAX_CATALOG_BYTES) {
+                    request.Cancel(); throw("catalogue mondial expiré ou trop volumineux");
+                }
+                sleep(100);
+            }
+            if (request.ResponseCode() != 200 || request.ProgressDownload() > MAX_CATALOG_BYTES) throw("HTTP " + request.ResponseCode());
+            string body = request.String();
+            if (body.Length > MAX_CATALOG_BYTES) throw("catalogue mondial trop volumineux");
+            InstallWorld(Json::Parse(body), true);
+        } catch { worldError = "Réseau/JSON mondial : " + getExceptionInfo(); }
+        worldDownloading = false;
     }
 
     // Manual in-game parser smoke check; exercises the actual AngelScript loader.
@@ -175,7 +383,17 @@ namespace PM {
             Json::Value@ tooEarly = Json::Parse("{\"schema\":2,\"version\":3,\"maps\":{\"test-UID\":{\"name\":\"Campagne\",\"authorMs\":100,\"referenceWrMs\":90,\"timesMs\":[99,97,93],\"release\":{\"kind\":\"campaign\",\"anchorAtUtc\":1700000000,\"availableAtUtc\":1700604800,\"wrCapturedAtUtc\":1700604799,\"publishedAtUtc\":1700604800}}}}");
             dictionary invalidSchedule;
             if (Decode(tooEarly, invalidSchedule, version, reason)) return "Échec : WR anticipé accepté";
-            return "Chargeur v2 OK : 3 paliers, doublon et WR anticipé refusés";
+            Json::Value@ world = Json::Parse("{\"schema\":3,\"version\":5,\"maps\":{\"TEST12345678901234567890\":{\"name\":\"Test\",\"status\":\"published\",\"mapType\":\"totd\",\"calculationVersion\":5,\"releaseAtUtc\":1700000000,\"eligibleAtUtc\":1700003600,\"thresholdDetectedAtUtc\":1700000000,\"captureDueAtUtc\":1700003600,\"playerCount\":5000,\"capturedAtUtc\":1700007200,\"publishedAtUtc\":1700007201,\"referenceWrMs\":80,\"source\":\"trackmania.io/world-map-leaderboard\",\"timesMs\":[100,100,90]}}}");
+            dictionary worldGoals;
+            dictionary worldStates;
+            dictionary worldDates;
+            if (!DecodeWorld(world, worldGoals, worldStates, worldDates, version, reason) || worldGoals.GetSize() != 1)
+                return "Échec catalogue mondial : " + reason;
+            MapGoals@ worldGoal;
+            worldGoals.Get("TEST12345678901234567890", @worldGoal);
+            if (worldGoal is null || !MatchesAuthor(worldGoal, 70) || worldGoal.times[0] != worldGoal.times[1])
+                return "Échec : Auteur/égalité mondiale refusé";
+            return "Chargeur v2/v5 OK : WR anticipé refusé, Auteur indépendant et égalités acceptées";
         } catch { return "Échec chargeur : " + getExceptionInfo(); }
     }
 
