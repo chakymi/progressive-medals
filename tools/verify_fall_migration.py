@@ -6,6 +6,7 @@ response bodies. --require-complete fails unless all 25 frozen goals are present
 import argparse
 from collections import Counter
 from datetime import datetime, timedelta, timezone
+import json
 from pathlib import Path
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -32,13 +33,15 @@ def public_catalog(*, open_request=urlopen):
             raise ValueError("public RPC unavailable")
         body = response.read(524289)
         if len(body) > 524288: raise ValueError("public RPC response too large")
-        import json
         return json.loads(body)
 
 
 def verify(store, public):
     if type(public) is not dict or public.get("schema") != 3 or type(public.get("maps")) is not dict:
         raise ValueError("unexpected public world catalogue")
+    archive = json.loads((Path(__file__).parent.parent / "docs/catalogue.json").read_text(encoding="utf-8"))
+    if archive.get("schema") != 2 or archive.get("version") != 4 or type(archive.get("maps")) is not dict:
+        raise ValueError("historical v4 archive unavailable")
     uids = ",".join(sorted(OLD_UIDS))
     rows = store.request("map_medals?select=*&map_uid=in.%28" + quote(uids, safe=",") + "%29&limit=25")
     if type(rows) is not list or len(rows) != 25 or {r["map_uid"] for r in rows} != OLD_UIDS:
@@ -51,7 +54,9 @@ def verify(store, public):
     for row in rows:
         uid = row["map_uid"]
         entry = public["maps"].get(uid)
-        if (type(entry) is not dict or entry.get("mapType") != "campaign" or row["map_type"] != "campaign" or
+        old = archive["maps"].get(uid)
+        if (type(entry) is not dict or type(old) is not dict or entry.get("mapType") != "campaign" or
+                entry.get("name") != old.get("name") or row["map_name"] != old.get("name") or row["map_type"] != "campaign" or
                 utc(row["release_at"]) != utc(FALL_OFFICIAL_OPEN) or
                 utc(row["eligible_at"]) != utc(FALL_OFFICIAL_OPEN) + timedelta(days=7)):
             raise ValueError("Fall 2026 official map metadata mismatch")
