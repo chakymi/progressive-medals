@@ -169,10 +169,16 @@ namespace PM {
     }
 
     MapGoals@ FindGoals(const string &in uid) {
-        MapGoals@ result;
-        // Published v4 is immutable. A later world catalogue cannot shadow it.
-        if (uid.Length > 0 && !catalog.Get(uid, @result)) worldCatalog.Get(uid, @result);
-        return result;
+        if (uid.Length == 0) return null;
+        MapGoals@ world;
+        worldCatalog.Get(uid, @world);
+        // Fall 2026: migrate one map at a time only after all three v5 times
+        // are published atomically. The frozen v4 catalogue remains available
+        // as the fallback while that map is waiting or temporarily offline.
+        if (IsReleased(world)) return world;
+        MapGoals@ historical;
+        catalog.Get(uid, @historical);
+        return historical;
     }
 
     string WorldStatusFor(const string &in uid) {

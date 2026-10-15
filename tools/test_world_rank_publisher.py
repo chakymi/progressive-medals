@@ -4,7 +4,7 @@ from pathlib import Path
 import unittest
 
 from world_rank_publisher import (OLD_UIDS, Store, capture, count_players,
-                                  epoch, filter_discovery_since, iso, run, validate_manifest)
+                                  epoch, fall_migration_maps, filter_discovery_since, iso, run, validate_manifest)
 from publish_fall_2026 import NADEO_ACCOUNT
 from generate import publish
 
@@ -65,6 +65,26 @@ class WorldRankTests(unittest.TestCase):
     def test_old_formula_cannot_generate_new_catalogues(self):
         with self.assertRaisesRegex(ValueError, "historical only"):
             publish({"version": 5, "maps": {}})
+
+    def test_fall_migration_is_explicit_25_exact_uid_exception(self):
+        maps = fall_migration_maps()
+        self.assertEqual(len(maps), 25)
+        self.assertEqual({m["uid"] for m in maps}, OLD_UIDS)
+        self.assertTrue(all(m["type"] == "campaign" and
+                            m["releaseAt"] == "2026-10-01T15:00:00Z" for m in maps))
+        with self.assertRaisesRegex(ValueError, "already published Fall 2026 UID"):
+            validate_manifest({"maps": maps})
+        self.assertEqual(len(validate_manifest({"maps": maps}, allow_historical=True)), 25)
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            validate_manifest({"maps": maps + [maps[0]]}, allow_historical=True)
+
+    def test_supabase_state_reads_are_bounded_and_paginated(self):
+        store = Store("https://example.supabase.co", "sb_secret_fake", open_request=lambda *_a, **_kw: None)
+        store.request = lambda endpoint: calls.append(endpoint) or []
+        calls = []
+        self.assertEqual(store.states([str(n).zfill(27) for n in range(101)]), [])
+        self.assertEqual(len(calls), 2)
+        self.assertIn("limit=100", calls[0])
 
     def test_discovery_requires_explicit_future_activation_boundary(self):
         maps = [{"releaseAt": "2026-09-30T17:00:00Z"},

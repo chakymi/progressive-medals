@@ -21,6 +21,9 @@ namespace PM {
             }
             UI::Separator();
             MapGoals@ goals = FindGoals(currentUid);
+            if (goals !is null && goals.calculationVersion < 5 && WorldStatusFor(currentUid).Length > 0) {
+                UI::TextWrapped("Calcul mondial en attente : objectifs historiques v4 conservés jusqu'à la publication complète de cette carte.");
+            }
             if (goals is null) {
                 string state = WorldStatusFor(currentUid);
                 if (state == "waiting_initial_delay") UI::TextWrapped("Médailles mondiales : en attente du délai initial.");

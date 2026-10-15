@@ -1,8 +1,9 @@
-"""Publisher for FUTURE maps only. Never imports or rewrites the frozen Fall 2026 v4.
+"""Publisher for future maps plus the explicitly requested Fall 2026 migration.
 
 Requires the isolated SQL migration, SUPABASE_URL and SUPABASE_SECRET_KEY in the
 publisher's server environment. --manifest supplies independently verified
 official UIDs and release times; no map is discovered from a player's machine.
+The immutable historical v4 file is never rewritten, even when a v5 map wins.
 """
 import argparse
 from datetime import datetime, timezone
@@ -15,7 +16,7 @@ from urllib.error import HTTPError
 from urllib.parse import quote, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
-from publish_fall_2026 import NADEO_ACCOUNT, fetch_json
+from publish_fall_2026 import NADEO_ACCOUNT, fetch_json, load_roster
 
 
 UID = re.compile(r"[A-Za-z0-9_]{20,40}\Z")
@@ -23,6 +24,9 @@ SOURCE = "trackmania.io/world-map-leaderboard"
 RANKS = {"platinum": 5000, "emerald": 1000, "diamond": 200, "wr": 1}
 MAX_BODY = 524_288
 OLD_UIDS = {m["uid"] for m in json.loads((Path(__file__).parent / "fall-2026-roster.json").read_text(encoding="utf-8"))["maps"]}
+# Nadeo official campaign v2, verified against all 25 UIDs on 2026-10-15.
+# Do not use the historical v4 exception's unrelated launchAtUtc.
+FALL_OFFICIAL_OPEN = "2026-10-01T15:00:00Z"
 
 
 def epoch(value):
@@ -39,15 +43,15 @@ def iso(value):
     return datetime.fromtimestamp(value, timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def validate_manifest(data):
-    if type(data) is not dict or set(data) != {"maps"} or type(data["maps"]) is not list or len(data["maps"]) > 100:
-        raise ValueError("manifest must contain <=100 verified maps")
+def validate_manifest(data, *, allow_historical=False, max_maps=100):
+    if type(data) is not dict or set(data) != {"maps"} or type(data["maps"]) is not list or len(data["maps"]) > max_maps:
+        raise ValueError("manifest contains too many maps")
     seen = set()
     for m in data["maps"]:
         if type(m) is not dict or set(m) != {"uid", "name", "type", "releaseAt"}:
             raise ValueError("map fields mismatch")
         uid = m["uid"]
-        if type(uid) is not str or not UID.fullmatch(uid) or uid in seen or uid in OLD_UIDS:
+        if type(uid) is not str or not UID.fullmatch(uid) or uid in seen or (uid in OLD_UIDS and not allow_historical):
             raise ValueError("invalid, duplicate or already published Fall 2026 UID")
         seen.add(uid)
         if type(m["name"]) is not str or not 1 <= len(m["name"]) <= 160 or m["type"] not in ("campaign", "totd"):
@@ -56,6 +60,18 @@ def validate_manifest(data):
         if not 1609459200 <= when <= int(time.time()) + 60:
             raise ValueError("release time not verified")
     return data["maps"]
+
+
+def fall_migration_maps():
+    """The ONLY permitted legacy UIDs; their published v4 stays archived."""
+    roster = load_roster()
+    if epoch(FALL_OFFICIAL_OPEN) + 604800 > time.time():
+        raise ValueError("Fall 2026 official J+7 is not over")
+    maps = [{"uid": m["uid"], "name": f"Fall 2026 - {m['number']:02d}", "type": "campaign",
+             "releaseAt": FALL_OFFICIAL_OPEN} for m in roster["maps"]]
+    if {m["uid"] for m in maps} != OLD_UIDS or len(maps) != 25:
+        raise ValueError("historical UID roster mismatch")
+    return maps
 
 
 def filter_discovery_since(maps, start_utc):
@@ -169,11 +185,17 @@ class Store:
 
     def states(self, uids):
         if not uids: return []
-        if len(uids) > 100 or any(not UID.fullmatch(uid) for uid in uids):
+        if len(uids) > 250 or any(not UID.fullmatch(uid) for uid in uids):
             raise ValueError("invalid manifest UID filter")
-        names = ",".join(uids)
-        return self.request("map_medals?select=map_uid,status,resume_status,eligible_at,capture_due_at,retry_at" +
-                            "&map_uid=in.%28" + quote(names, safe=",") + "%29&limit=100")
+        rows = []
+        for offset in range(0, len(uids), 100):
+            names = ",".join(uids[offset:offset + 100])
+            page = self.request("map_medals?select=map_uid,status,resume_status,eligible_at,capture_due_at,retry_at" +
+                                "&map_uid=in.%28" + quote(names, safe=",") + "%29&limit=100")
+            if type(page) is not list or len(page) > 100:
+                raise ValueError("invalid Supabase map state page")
+            rows.extend(page)
+        return rows
 
     def pending(self):
         # Old low-traffic cards remain eligible even after their TOTD month
@@ -223,9 +245,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--discover", action="store_true", help="discover official maps via server-only Nadeo service account")
+    parser.add_argument("--migrate-fall-2026", action="store_true",
+                        help="explicitly register the 25 verified historic UID using official J+7; preserve public v4 archive")
     args = parser.parse_args()
     maps = validate_manifest(json.loads(args.manifest.read_text(encoding="utf-8")))
     store = Store(os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SECRET_KEY", ""))
+    if args.migrate_fall_2026:
+        maps.extend(fall_migration_maps())
     if args.discover:
         from discover_official_maps import fetch_official
         start_utc = os.environ.get("PM_WORLD_RANK_START_UTC", "")
@@ -246,7 +272,7 @@ def main():
                 m["name"] = info.get("name", "")
             maps.append(m)
             used.add(m["uid"])
-        validate_manifest({"maps": maps})
+        validate_manifest({"maps": maps}, allow_historical=args.migrate_fall_2026, max_maps=250)
     run(maps, store)
 
 

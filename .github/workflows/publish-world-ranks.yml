@@ -25,6 +25,7 @@ jobs:
       PM_NADEO_SERVICE_LOGIN: ${{ secrets.PM_NADEO_SERVICE_LOGIN }}
       PM_NADEO_SERVICE_PASSWORD: ${{ secrets.PM_NADEO_SERVICE_PASSWORD }}
       PM_WORLD_RANK_START_UTC: ${{ vars.PM_WORLD_RANK_START_UTC }}
+      PM_MIGRATE_FALL_2026: ${{ vars.PM_MIGRATE_FALL_2026 }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -44,7 +45,11 @@ jobs:
               echo 'Waiting for explicit UTC activation; no map registered.'
               exit 0
             fi
-            python -B tools/world_rank_publisher.py --manifest tools/world-rank-manifest.json --discover
+            if [ "$PM_MIGRATE_FALL_2026" = true ]; then
+              python -B tools/world_rank_publisher.py --manifest tools/world-rank-manifest.json --discover --migrate-fall-2026
+            else
+              python -B tools/world_rank_publisher.py --manifest tools/world-rank-manifest.json --discover
+            fi
           else
             python -B tools/world_rank_publisher.py --manifest tools/world-rank-manifest.json
           fi

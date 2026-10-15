@@ -16,7 +16,7 @@ namespace PM {
         for (uint i = 0; i < menuUids.Length; i++) { if (menuUids[i] == uid) { inCampaign = true; break; } }
         if (!inCampaign) return;
         MapGoals@ goal = FindGoals(uid);
-        if (!IsReleased(goal) || best > goal.authorMs) return;
+        if (!IsReleased(goal) || (goal.calculationVersion < 5 && best > goal.authorMs)) return;
         if (!NadeoServices::IsAuthenticated("NadeoLiveServices")) return;
         string account = NadeoServices::GetAccountID();
         if (account.Length == 0) return;

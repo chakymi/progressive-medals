@@ -10,6 +10,7 @@ async function main() {
   const sql = fs.readFileSync(path.join(__dirname, '../supabase/migrations/202610150001_world_rank_medals.sql'), 'utf8');
   const uid = 'T'.repeat(27);
   const campaign = 'C'.repeat(27);
+  const lateFall = 'F'.repeat(27);
   const source = 'trackmania.io/world-map-leaderboard';
   const expectRejected = async (operation, pattern) => {
     await assert.rejects(operation, pattern);
@@ -41,6 +42,14 @@ async function main() {
     const after = (await db.query('select threshold_detected_at, capture_due_at from public.map_medals where map_uid=$1', [uid])).rows[0];
     assert.equal(String(after.threshold_detected_at), String(first.threshold_detected_at));
     assert.equal(String(after.capture_due_at), String(first.capture_due_at));
+
+    // Fall 2026 is already past J+7; absent historical player-count evidence,
+    // the first 5,000-player observation is NOW and the extra hour is real.
+    await register(lateFall, 'campaign', '2026-10-01T15:00:00Z');
+    assert.equal((await observe(lateFall, 11242)).rows[0].result.status, 'waiting_extra_hour');
+    const late = (await db.query('select threshold_detected_at, capture_due_at from public.map_medals where map_uid=$1', [lateFall])).rows[0];
+    assert.equal(new Date(late.capture_due_at).getTime() - new Date(late.threshold_detected_at).getTime(), 3600000);
+    await expectRejected(publish(lateFall, new Date().toISOString()), /invalid or premature capture/);
 
     // Independent popular campaign: threshold observed before J+7, publish now.
     await register(campaign, 'campaign', new Date(Date.now() - 8 * 86400000).toISOString());
