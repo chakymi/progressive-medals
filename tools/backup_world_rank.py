@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from check_world_service_access import private_config
 from world_rank_publisher import Store, iso
 from publish_fall_2026 import write_new
 import time
@@ -16,12 +17,17 @@ import time
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--private-env", type=Path, help="optional existing private .env; never copied or logged")
     args = parser.parse_args()
     destination = args.output.resolve()
     root = Path(__file__).resolve().parent.parent
     if destination == root or root in destination.parents or not destination.parent.is_dir():
         parser.error("backup must be written to an existing PRIVATE directory outside this repository")
-    store = Store(os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SECRET_KEY", ""))
+    values = private_config(args.private_env) if args.private_env else {}
+    url = os.environ.get("SUPABASE_URL") or values.get("SUPABASE_URL", "")
+    key = (os.environ.get("SUPABASE_SECRET_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or
+           values.get("SUPABASE_SECRET_KEY") or values.get("SUPABASE_SERVICE_ROLE_KEY", ""))
+    store = Store(url, key)
     def pages(endpoint):
         result = []
         for offset in range(0, 100000, 100):
