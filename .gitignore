@@ -38,6 +38,8 @@
 !/tools/publish_fall_2026.py
 !/tools/world_rank_publisher.py
 !/tools/check_world_service_access.py
+!/tools/check_official_fall_roster.py
+!/tools/test_check_official_fall_roster.py
 !/tools/test_check_service_access.py
 !/tools/discover_official_maps.py
 !/tools/check_nadeo_discovery.py

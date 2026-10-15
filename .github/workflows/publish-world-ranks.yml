@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      verify_fall_official:
+        description: Confirm 25 Nadeo UIDs and official J+7 time (read-only)
+        type: boolean
+        default: false
 
 concurrency:
   group: progressive-medals-world-rank-publisher
@@ -27,8 +32,11 @@ jobs:
           python-version: '3.12'
       - name: Test publisher
         run: python -B -m unittest discover -s tools -p 'test_*.py' -q
+      - name: Verify official Fall 2026 campaign (read-only)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.verify_fall_official }}
+        run: python -B tools/check_official_fall_roster.py
       - name: Discover Nadeo campaigns/TOTDs if authenticated and publish eligible maps
-        if: env.SUPABASE_URL != '' && env.SUPABASE_SECRET_KEY != ''
+        if: ${{ !inputs.verify_fall_official && env.SUPABASE_URL != '' && env.SUPABASE_SECRET_KEY != '' }}
         shell: bash
         run: |
           if [ -n "$PM_NADEO_SERVICE_LOGIN" ] && [ -n "$PM_NADEO_SERVICE_PASSWORD" ]; then
