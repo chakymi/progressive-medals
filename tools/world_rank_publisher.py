@@ -65,10 +65,19 @@ def validate_manifest(data, *, allow_historical=False, max_maps=100):
 def fall_migration_maps():
     """The ONLY permitted legacy UIDs; their published v4 stays archived."""
     roster = load_roster()
+    legacy = json.loads((Path(__file__).parent.parent / "docs/catalogue.json").read_text(encoding="utf-8"))
+    if type(legacy) is not dict or legacy.get("schema") != 2 or legacy.get("version") != 4 or type(legacy.get("maps")) is not dict:
+        raise ValueError("frozen Fall 2026 v4 source unavailable")
     if epoch(FALL_OFFICIAL_OPEN) + 604800 > time.time():
         raise ValueError("Fall 2026 official J+7 is not over")
-    maps = [{"uid": m["uid"], "name": f"Fall 2026 - {m['number']:02d}", "type": "campaign",
-             "releaseAt": FALL_OFFICIAL_OPEN} for m in roster["maps"]]
+    maps = []
+    for item in roster["maps"]:
+        published = legacy["maps"].get(item["uid"])
+        if (type(published) is not dict or published.get("authorMs") != item["authorMs"] or
+                type(published.get("name")) is not str or not 1 <= len(published["name"]) <= 160):
+            raise ValueError("frozen Fall 2026 UID/author/name mismatch")
+        maps.append({"uid": item["uid"], "name": published["name"], "type": "campaign",
+                     "releaseAt": FALL_OFFICIAL_OPEN})
     if {m["uid"] for m in maps} != OLD_UIDS or len(maps) != 25:
         raise ValueError("historical UID roster mismatch")
     return maps

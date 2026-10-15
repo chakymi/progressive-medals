@@ -72,6 +72,7 @@ class WorldRankTests(unittest.TestCase):
         self.assertEqual({m["uid"] for m in maps}, OLD_UIDS)
         self.assertTrue(all(m["type"] == "campaign" and
                             m["releaseAt"] == "2026-10-01T15:00:00Z" for m in maps))
+        self.assertEqual(maps[20]["name"], "Egypt 2026")
         with self.assertRaisesRegex(ValueError, "already published Fall 2026 UID"):
             validate_manifest({"maps": maps})
         self.assertEqual(len(validate_manifest({"maps": maps}, allow_historical=True)), 25)
