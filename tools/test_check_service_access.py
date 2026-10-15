@@ -27,3 +27,21 @@ class ServiceAccessTests(TestCase):
         self.assertEqual([c.args[0] for c in store.request.call_args_list],
                          ["map_medals?select=map_uid,status&limit=1", "rpc/pm_public_catalog"])
         self.assertNotIn("sb_secret_private-test", output.getvalue())
+
+    def test_github_secret_transfer_uses_stdin_not_command_line(self):
+        store = mock.Mock()
+        store.request.side_effect = [[], {"schema": 3, "version": 5, "maps": {}}]
+        result = mock.Mock(returncode=0)
+        output = io.StringIO()
+        with (mock.patch("sys.argv", ["check_world_service_access.py", "--configure-github"]),
+              mock.patch.dict("os.environ", {"SUPABASE_URL": "https://mfopepdzllvyefwnxvqh.supabase.co",
+                                         "SUPABASE_SECRET_KEY": "sb_secret_private-test"}),
+              mock.patch.object(checker, "Store", return_value=store),
+              mock.patch.object(checker.subprocess, "run", return_value=result) as upload,
+              contextlib.redirect_stdout(output)):
+            checker.main()
+        calls = upload.call_args_list
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[1].kwargs["input"], "sb_secret_private-test")
+        self.assertNotIn("sb_secret_private-test", str(calls[1].args))
+        self.assertNotIn("sb_secret_private-test", output.getvalue())

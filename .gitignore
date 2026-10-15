@@ -41,6 +41,8 @@
 !/tools/test_check_service_access.py
 !/tools/discover_official_maps.py
 !/tools/check_nadeo_discovery.py
+!/tools/configure_nadeo_github.py
+!/tools/test_configure_nadeo_github.py
 !/tools/test_nadeo_check.py
 !/tools/test_discover_official_maps.py
 !/tools/test_world_rank_sql.cjs

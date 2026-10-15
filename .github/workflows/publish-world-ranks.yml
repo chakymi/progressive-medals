@@ -32,6 +32,10 @@ jobs:
         shell: bash
         run: |
           if [ -n "$PM_NADEO_SERVICE_LOGIN" ] && [ -n "$PM_NADEO_SERVICE_PASSWORD" ]; then
+            if [ -z "$PM_WORLD_RANK_START_UTC" ]; then
+              echo 'Waiting for explicit UTC activation; no map registered.'
+              exit 0
+            fi
             python -B tools/world_rank_publisher.py --manifest tools/world-rank-manifest.json --discover
           else
             python -B tools/world_rank_publisher.py --manifest tools/world-rank-manifest.json
