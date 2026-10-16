@@ -29,7 +29,7 @@ namespace PM {
                 string state = WorldStatusFor(currentUid);
                 if (state == "waiting_initial_delay") UI::TextWrapped("Médailles mondiales : en attente du délai initial.");
                 else if (state == "waiting_for_players") UI::TextWrapped("Médailles mondiales : en attente de " +
-                    (WorldPolicyFor(currentUid) == 7 ? "2 500" : "5 000") + " joueurs classés.");
+                    (WorldPolicyFor(currentUid) >= 7 ? "2 500" : "5 000") + " joueurs classés.");
                 else if (state == "waiting_extra_hour") {
                     UI::TextWrapped("Médailles mondiales : délai supplémentaire après détection du seuil.");
                     int64 due = WorldDueFor(currentUid);
@@ -44,7 +44,9 @@ namespace PM {
                 UI::TextWrapped("Médailles non disponibles avant la publication commune.");
                 UI::Text("Disponibles à partir du " + Time::FormatStringUTC("%Y-%m-%d %H:%M UTC", goals.publishedAtUtc));
             } else {
-                if (goals.calculationVersion == 7)
+                if (goals.calculationVersion == 8 && goals.releaseKind == "totd")
+                    UI::TextDisabled("TOTD : rangs mondiaux 1 000 / 500 / 100 ; 2 500 joueurs minimum");
+                else if (goals.calculationVersion == 7)
                     UI::TextDisabled(goals.releaseKind == "totd" ?
                         "TOTD : rangs mondiaux 2 500 / 500 / 100" :
                         "Campagne : rangs mondiaux 2 500 / 1 000 / 200");

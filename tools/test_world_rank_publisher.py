@@ -46,13 +46,13 @@ class FakeStore:
             return True
         return None
 
-    def states(self, uids):
-        if not self.registered: return []
+    def states(self, uids, kind="campaign"):
+        if not self.registered or not uids or self.kind != kind: return []
         return [{"map_uid": UID, "status": "published" if self.published else "waiting_initial_delay",
                  "retry_at": None}]
 
-    def pending(self):
-        if self.registered and not self.published:
+    def pending(self, kind="campaign"):
+        if self.registered and not self.published and self.kind == kind:
             return [{"map_uid": UID, "map_type": self.kind, "status": "waiting_initial_delay", "retry_at": None}]
         return []
 
@@ -89,6 +89,24 @@ class WorldRankTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertIn("limit=100", calls[0])
         self.assertTrue(calls[0].startswith("pm_revised_medals?"))
+        self.assertEqual(store.states([UID], kind="totd"), [])
+        self.assertTrue(calls[-1].startswith("pm_totd_medals?"))
+
+    def test_store_keeps_campaign_v7_and_totd_v8_separate(self):
+        store = Store("https://example.supabase.co", "sb_secret_fake", open_request=lambda *_a, **_kw: None)
+        calls = []
+        store.request = lambda endpoint, payload=None: calls.append((endpoint, payload)) or ([] if payload is None else None)
+        store.states([UID], "campaign")
+        store.states([UID], "totd")
+        store.pending("campaign")
+        store.pending("totd")
+        store.rpc("observe", policy=7, uid=UID, players=2500)
+        store.rpc("observe", policy=8, uid=UID, players=2500)
+        self.assertTrue(calls[0][0].startswith("pm_revised_medals?"))
+        self.assertTrue(calls[1][0].startswith("pm_totd_medals?"))
+        self.assertTrue(calls[2][0].startswith("pm_revised_medals?"))
+        self.assertTrue(calls[3][0].startswith("pm_totd_medals?"))
+        self.assertEqual([calls[4][0], calls[5][0]], ["rpc/pm7_observe", "rpc/pm8_observe"])
 
     def test_discovery_requires_explicit_future_activation_boundary(self):
         maps = [{"releaseAt": "2026-09-30T17:00:00Z"},
@@ -119,8 +137,8 @@ class WorldRankTests(unittest.TestCase):
                           kind="totd")
         goals, evidence, _ = capture(UID, lambda url: supplier(url, players=2500, author=18000),
                                       kind="totd", pause=lambda _: None)
-        self.assertEqual([goals[k] for k in ("platinum", "emerald", "diamond")], [23000, 21000, 19800])
-        self.assertEqual([evidence[k]["position"] for k in ("platinum", "emerald", "diamond")], [2500, 500, 100])
+        self.assertEqual([goals[k] for k in ("platinum", "emerald", "diamond")], [22000, 21000, 19800])
+        self.assertEqual([evidence[k]["position"] for k in ("platinum", "emerald", "diamond")], [1000, 500, 100])
 
     def test_2499_players_never_enter_capture(self):
         self.assertEqual(count_players(UID, lambda url: supplier(url, players=2499)), 2499)
@@ -136,7 +154,7 @@ class WorldRankTests(unittest.TestCase):
                     pause=lambda _: None)
                 self.assertEqual([name for name, _ in store.calls], ["register", "observe", "publish"])
                 published = store.calls[-1][1]
-                expected = [23000, 21000, 19800] if kind == "totd" else [23000, 22000, 20000]
+                expected = [22000, 21000, 19800] if kind == "totd" else [23000, 22000, 20000]
                 self.assertEqual([published[k] for k in ("platinum", "emerald", "diamond")], expected)
                 self.assertEqual(published["captured"], iso(epoch(RELEASE) + 8 * 86400))
                 run([{**MAP, "type": kind}], store, fetch=supplier, pause=lambda _: None)

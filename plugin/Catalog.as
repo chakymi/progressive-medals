@@ -252,7 +252,8 @@ namespace PM {
                     kind is null || kind.GetType() != Json::Type::String ||
                     (string(kind) != "campaign" && string(kind) != "totd") ||
                     calc is null || calc.GetType() != Json::Type::Number ||
-                    (double(calc) != 5 && double(calc) != 7)) {
+                    (double(calc) != 5 && double(calc) != 7 && double(calc) != 8) ||
+                    (double(calc) == 8 && string(kind) != "totd")) {
                 reason = "métadonnées mondiales invalides"; return false;
             }
             int64 released = 0;
@@ -279,7 +280,7 @@ namespace PM {
                 const Json::Value@ source = entry.Get("source");
                 int64 due = 0;
                 int64 threshold = 0;
-                uint requiredPlayers = double(calc) == 7 ? 2500 : 5000;
+                uint requiredPlayers = double(calc) >= 7 ? 2500 : 5000;
                 if (players < requiredPlayers || !ReadStamp(entry, "captureDueAtUtc", due) ||
                         !ReadStamp(entry, "thresholdDetectedAtUtc", threshold) ||
                         (due != eligible && due != threshold + 3600) ||
@@ -421,7 +422,7 @@ namespace PM {
             Json::Value@ tooEarly = Json::Parse("{\"schema\":2,\"version\":3,\"maps\":{\"test-UID\":{\"name\":\"Campagne\",\"authorMs\":100,\"referenceWrMs\":90,\"timesMs\":[99,97,93],\"release\":{\"kind\":\"campaign\",\"anchorAtUtc\":1700000000,\"availableAtUtc\":1700604800,\"wrCapturedAtUtc\":1700604799,\"publishedAtUtc\":1700604800}}}}");
             dictionary invalidSchedule;
             if (Decode(tooEarly, invalidSchedule, version, reason)) return "Échec : WR anticipé accepté";
-            Json::Value@ world = Json::Parse("{\"schema\":3,\"version\":5,\"maps\":{\"TEST12345678901234567890\":{\"name\":\"Test\",\"status\":\"published\",\"mapType\":\"totd\",\"calculationVersion\":7,\"releaseAtUtc\":1700000000,\"eligibleAtUtc\":1700003600,\"thresholdDetectedAtUtc\":1700000000,\"captureDueAtUtc\":1700003600,\"playerCount\":2500,\"capturedAtUtc\":1700007200,\"publishedAtUtc\":1700007201,\"referenceWrMs\":80,\"source\":\"trackmania.io/world-map-leaderboard\",\"timesMs\":[100,100,90]}}}");
+            Json::Value@ world = Json::Parse("{\"schema\":3,\"version\":5,\"maps\":{\"TEST12345678901234567890\":{\"name\":\"Test\",\"status\":\"published\",\"mapType\":\"totd\",\"calculationVersion\":8,\"releaseAtUtc\":1700000000,\"eligibleAtUtc\":1700003600,\"thresholdDetectedAtUtc\":1700000000,\"captureDueAtUtc\":1700003600,\"playerCount\":2500,\"capturedAtUtc\":1700007200,\"publishedAtUtc\":1700007201,\"referenceWrMs\":80,\"source\":\"trackmania.io/world-map-leaderboard\",\"timesMs\":[100,100,90]}}}");
             dictionary worldGoals;
             dictionary worldStates;
             dictionary worldDates;
@@ -433,10 +434,10 @@ namespace PM {
                 return "Échec catalogue mondial : " + reason;
             MapGoals@ worldGoal;
             worldGoals.Get("TEST12345678901234567890", @worldGoal);
-            if (worldGoal is null || worldGoal.calculationVersion != 7 || !MatchesAuthor(worldGoal, 70) ||
+            if (worldGoal is null || worldGoal.calculationVersion != 8 || !MatchesAuthor(worldGoal, 70) ||
                     worldGoal.times[0] != worldGoal.times[1])
                 return "Échec : Auteur/égalité mondiale refusé";
-            return "Chargeur v2/v5/v7 OK : WR anticipé refusé, Auteur indépendant et égalités acceptées";
+            return "Chargeur v2/v5/v7/v8 OK : WR anticipé refusé, Auteur indépendant et égalités acceptées";
         } catch { return "Échec chargeur : " + getExceptionInfo(); }
     }
 

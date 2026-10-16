@@ -52,6 +52,7 @@
 !/tools/test_discover_official_maps.py
 !/tools/test_world_rank_sql.cjs
 !/tools/test_world_rank_v7_sql.cjs
+!/tools/test_totd_rank_v8_sql.cjs
 !/tools/backup_world_rank.py
 !/tools/test_world_rank_publisher.py
 !/tools/world-rank-manifest.json
@@ -61,6 +62,7 @@
 !/supabase/migrations/
 !/supabase/migrations/202610150001_world_rank_medals.sql
 !/supabase/migrations/202610160001_world_ranks_v7.sql
+!/supabase/migrations/202610170001_totd_rank_v8.sql
 !/supabase/functions/
 !/supabase/functions/progressive-medals-catalogue/
 !/supabase/functions/progressive-medals-catalogue/index.ts

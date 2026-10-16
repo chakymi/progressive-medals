@@ -23,11 +23,11 @@ UID = re.compile(r"[A-Za-z0-9_]{20,40}\Z")
 SOURCE = "trackmania.io/world-map-leaderboard"
 RANKS_BY_TYPE = {
     "campaign": {"platinum": 2500, "emerald": 1000, "diamond": 200, "wr": 1},
-    "totd": {"platinum": 2500, "emerald": 500, "diamond": 100, "wr": 1},
+    "totd": {"platinum": 1000, "emerald": 500, "diamond": 100, "wr": 1},
 }
 # The v5 evidence verifier must always describe the archived 5,000th-rank goals.
 RANKS = {"platinum": 5000, "emerald": 1000, "diamond": 200, "wr": 1}
-REQUIRED_PLAYERS = {kind: ranks["platinum"] for kind, ranks in RANKS_BY_TYPE.items()}
+REQUIRED_PLAYERS = {"campaign": 2500, "totd": 2500}  # A TOTD still needs 2,500 players for stable sampling.
 MAX_BODY = 524_288
 OLD_UIDS = {m["uid"] for m in json.loads((Path(__file__).parent / "fall-2026-roster.json").read_text(encoding="utf-8"))["maps"]}
 # Nadeo official campaign v2, verified against all 25 UIDs on 2026-10-15.
@@ -176,9 +176,11 @@ class Store:
         self.open_request = open_request or build_opener(NoRedirect).open
 
     def request(self, endpoint, payload=None):
-        if not (endpoint.startswith("rpc/pm7_") or endpoint.startswith("rpc/pm_public_catalog") or
+        if not (endpoint.startswith("rpc/pm7_") or endpoint.startswith("rpc/pm8_") or
+                endpoint.startswith("rpc/pm_public_catalog") or
                 endpoint.startswith("map_medals?") or endpoint.startswith("map_medal_publications?") or
-                endpoint.startswith("pm_revised_medals?") or endpoint.startswith("pm_revised_medal_publications?")):
+                endpoint.startswith("pm_revised_medals?") or endpoint.startswith("pm_revised_medal_publications?") or
+                endpoint.startswith("pm_totd_medals?") or endpoint.startswith("pm_totd_medal_publications?")):
             raise ValueError("unapproved Supabase operation")
         body = json.dumps(payload).encode() if payload is not None else None
         headers = {"apikey": self.key, "Accept": "application/json", "Content-Type": "application/json"}
@@ -196,69 +198,71 @@ class Store:
             exc.close()
             raise ValueError(f"Supabase HTTP {code}; no public goals changed") from exc
 
-    def rpc(self, name, **params):
+    def rpc(self, name, *, policy, **params):
         if name not in ("register", "observe", "retry", "publish"):
             raise ValueError("unknown publisher operation")
-        return self.request("rpc/pm7_" + name, params)
+        if policy not in (7, 8): raise ValueError("unsupported publisher policy")
+        return self.request("rpc/pm" + str(policy) + "_" + name, params)
 
-    def states(self, uids):
+    def states(self, uids, kind="campaign"):
         if not uids: return []
         if len(uids) > 250 or any(not UID.fullmatch(uid) for uid in uids):
             raise ValueError("invalid manifest UID filter")
         rows = []
+        table = "pm_totd_medals" if kind == "totd" else "pm_revised_medals"
         for offset in range(0, len(uids), 100):
             names = ",".join(uids[offset:offset + 100])
-            page = self.request("pm_revised_medals?select=map_uid,status,resume_status,eligible_at,capture_due_at,retry_at" +
+            page = self.request(table + "?select=map_uid,status,resume_status,eligible_at,capture_due_at,retry_at" +
                                 "&map_uid=in.%28" + quote(names, safe=",") + "%29&limit=100")
             if type(page) is not list or len(page) > 100:
                 raise ValueError("invalid Supabase map state page")
             rows.extend(page)
         return rows
 
-    def pending(self):
+    def pending(self, kind="campaign"):
         # Old low-traffic cards remain eligible even after their TOTD month
         # disappears from discovery. Rotate the oldest ten checks per cycle.
         current = quote(iso(int(time.time())), safe="")
-        return self.request("pm_revised_medals?select=map_uid,map_type,status,retry_at,checked_at&status=neq.published" +
+        table = "pm_totd_medals" if kind == "totd" else "pm_revised_medals"
+        return self.request(table + "?select=map_uid,map_type,status,retry_at,checked_at&status=neq.published" +
                             "&or=%28status.neq.retry_pending,retry_at.lte." + current + "%29" +
                             "&order=checked_at.asc.nullsfirst&limit=10")
 
 
 def run(maps, store, *, fetch=fetch_json, clock=time.time, pause=time.sleep):
-    states = {m["map_uid"]: m for m in store.states([m["uid"] for m in maps])}
-    for m in maps:
-        uid = m["uid"]
-        state = states.get(uid)
-        if state is not None: continue
-        try:
-            verify_map(m, fetch)
-            store.rpc("register", uid=uid, title=m["name"], kind=m["type"], released=m["releaseAt"])
-        except Exception as exc:
-            print(f"{uid}: registration deferred ({type(exc).__name__})")
-            continue
-        pause(2.5)
-    for state in store.pending():
-        uid = state["map_uid"]
-        if not UID.fullmatch(uid): raise ValueError("invalid UID in persistent queue")
-        kind = state["map_type"]
-        if kind not in RANKS_BY_TYPE: raise ValueError("invalid persisted map type")
-        try:
-            players = count_players(uid, fetch, kind=kind)
-            status = store.rpc("observe", uid=uid, players=players)["status"]
-            print(f"{uid}: {status} ({players} players)")
-            if status != "ready_to_capture": continue
-            times, evidence, captured = capture(uid, fetch, clock, pause, kind=kind)
-            if min(x["playerCount"] for x in evidence.values()) < REQUIRED_PLAYERS[kind]:
-                raise ValueError("player count dropped before capture")
-            published = store.rpc("publish", uid=uid, platinum=times["platinum"], emerald=times["emerald"],
-                                  diamond=times["diamond"], wr=times["wr"], captured=iso(captured),
-                                  source=SOURCE, evidence=evidence)
-            print(f"{uid}: {'published' if published else 'already published'} at {iso(captured)}")
-        except Exception as exc:
-            # Never log response bodies, account identifiers or server credentials.
-            print(f"{uid}: retry pending ({type(exc).__name__})")
-            store.rpc("retry", uid=uid, reason=type(exc).__name__)
-        pause(2.5)
+    for kind, policy in (("campaign", 7), ("totd", 8)):
+        selected = [m for m in maps if m["type"] == kind]
+        states = {m["map_uid"]: m for m in store.states([m["uid"] for m in selected], kind)}
+        for m in selected:
+            uid = m["uid"]
+            if uid in states: continue
+            try:
+                verify_map(m, fetch)
+                store.rpc("register", policy=policy, uid=uid, title=m["name"], kind=kind, released=m["releaseAt"])
+            except Exception as exc:
+                print(f"{uid}: registration deferred ({type(exc).__name__})")
+                continue
+            pause(2.5)
+        for state in store.pending(kind):
+            uid = state["map_uid"]
+            if not UID.fullmatch(uid) or state["map_type"] != kind:
+                raise ValueError("invalid map in persistent queue")
+            try:
+                players = count_players(uid, fetch, kind=kind)
+                status = store.rpc("observe", policy=policy, uid=uid, players=players)["status"]
+                print(f"{uid}: {status} ({players} players)")
+                if status != "ready_to_capture": continue
+                times, evidence, captured = capture(uid, fetch, clock, pause, kind=kind)
+                if min(x["playerCount"] for x in evidence.values()) < REQUIRED_PLAYERS[kind]:
+                    raise ValueError("player count dropped before capture")
+                published = store.rpc("publish", policy=policy, uid=uid, platinum=times["platinum"],
+                                      emerald=times["emerald"], diamond=times["diamond"], wr=times["wr"],
+                                      captured=iso(captured), source=SOURCE, evidence=evidence)
+                print(f"{uid}: {'published' if published else 'already published'} at {iso(captured)}")
+            except Exception as exc:
+                print(f"{uid}: retry pending ({type(exc).__name__})")
+                store.rpc("retry", policy=policy, uid=uid, reason=type(exc).__name__)
+            pause(2.5)
 
 
 def main():
@@ -279,7 +283,9 @@ def main():
             parser.error("PM_WORLD_RANK_START_UTC is required before automatic discovery; no historical backfill")
         filter_discovery_since([], start_utc)  # Fail before contacting Nadeo.
         found = filter_discovery_since(fetch_official(), start_utc)
-        existing = {row["map_uid"] for row in store.states([m["uid"] for m in found])}
+        existing = set()
+        for kind in ("campaign", "totd"):
+            existing.update(row["map_uid"] for row in store.states([m["uid"] for m in found if m["type"] == kind], kind))
         used = {m["uid"] for m in maps}
         for m in found:
             if m["uid"] in used: continue
