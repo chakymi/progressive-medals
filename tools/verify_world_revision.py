@@ -58,12 +58,17 @@ def verify(store, public, old, old_journal):
     proofs = read_rows(store, "pm_revised_medal_publications", uids)
     if not set(proofs) <= set(revised): raise ValueError("orphan new evidence")
     counts = Counter()
+    counts["registered"] = len(revised)
+    due_dates = []
     for uid, historical in old.items():
         entry = public["maps"].get(uid)
         row = revised.get(uid)
+        if row is not None and row.get("capture_due_at"):
+            due_dates.append(stamp(row["capture_due_at"]))
         if type(entry) is not dict: raise ValueError("published UID missing from public catalogue")
         if row is None or row["status"] != "published":
             counts["waiting"] += 1
+            if row is not None: counts[row["status"]] += 1
             if (uid in proofs or entry.get("calculationVersion") != 5 or
                     entry.get("timesMs") != [historical[k] for k in ("platinum_ms", "emerald_ms", "diamond_ms")]):
                 raise ValueError("historical medals not preserved while recapturing")
@@ -107,7 +112,7 @@ def verify(store, public, old, old_journal):
             raise ValueError("v7 append-only audit mismatch")
     if counts["waiting"] + counts["published"] != 26:
         raise ValueError("v7 archive size changed")
-    return counts
+    return counts, sorted(due_dates)
 
 
 def main():
@@ -121,8 +126,11 @@ def main():
     key = os.environ.get("SUPABASE_SECRET_KEY") or values.get("SUPABASE_SECRET_KEY") or values.get("SUPABASE_SERVICE_ROLE_KEY", "")
     store = Store(values.get("SUPABASE_URL", ""), key)
     if store.base != BASE + "/rest/v1/": raise ValueError("wrong Supabase project")
-    counts = verify(store, public_catalog(), old, journal)
-    print(f"v7 verification: {counts['published']}/26 revised, {counts['waiting']} still on frozen v5. No writes.")
+    counts, due_dates = verify(store, public_catalog(), old, journal)
+    print(f"v7 verification: {counts['published']}/26 revised, {counts['registered']} registered, "
+          f"{counts['waiting']} still on frozen v5 ({counts['waiting_extra_hour']} in extra hour). No writes.")
+    if due_dates:
+        print("First/last UTC v7 capture due: " + due_dates[0].isoformat() + " / " + due_dates[-1].isoformat())
     if args.require_complete and counts["published"] != 26:
         raise ValueError("revision v7 not complete")
 
