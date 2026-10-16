@@ -21,7 +21,13 @@ from publish_fall_2026 import NADEO_ACCOUNT, fetch_json, load_roster
 
 UID = re.compile(r"[A-Za-z0-9_]{20,40}\Z")
 SOURCE = "trackmania.io/world-map-leaderboard"
+RANKS_BY_TYPE = {
+    "campaign": {"platinum": 2500, "emerald": 1000, "diamond": 200, "wr": 1},
+    "totd": {"platinum": 2500, "emerald": 500, "diamond": 100, "wr": 1},
+}
+# The v5 evidence verifier must always describe the archived 5,000th-rank goals.
 RANKS = {"platinum": 5000, "emerald": 1000, "diamond": 200, "wr": 1}
+REQUIRED_PLAYERS = {kind: ranks["platinum"] for kind, ranks in RANKS_BY_TYPE.items()}
 MAX_BODY = 524_288
 OLD_UIDS = {m["uid"] for m in json.loads((Path(__file__).parent / "fall-2026-roster.json").read_text(encoding="utf-8"))["maps"]}
 # Nadeo official campaign v2, verified against all 25 UIDs on 2026-10-15.
@@ -104,9 +110,9 @@ def verify_map(m, fetch=fetch_json):
     return info
 
 
-def verify_rank(data, rank, seen):
+def verify_rank(data, rank, seen, required_players=5000):
     if (type(data) is not dict or data.get("lockedLeaderboard") is not False or
-            type(data.get("playercount")) is not int or data["playercount"] < 5000 or
+            type(data.get("playercount")) is not int or data["playercount"] < required_players or
             data["playercount"] < rank or type(data.get("tops")) is not list or len(data["tops"]) != 1):
         raise ValueError("world leaderboard incomplete")
     top = data["tops"][0]
@@ -124,15 +130,16 @@ def leaderboard(uid, rank, fetch=fetch_json):
     return fetch(f"https://trackmania.io/api/leaderboard/map/{uid}?length=1&offset={rank - 1}")
 
 
-def capture(uid, fetch=fetch_json, clock=time.time, pause=time.sleep):
-    """Independent 1st/200th/1000th/5000th world records; no AT/WR formula."""
+def capture(uid, fetch=fetch_json, clock=time.time, pause=time.sleep, *, kind="campaign"):
+    """Four exact world positions selected by map type; no AT/WR formula."""
+    ranks = RANKS_BY_TYPE[kind]
     seen = set()
     times = {}
     evidence = {}
-    for label, rank in RANKS.items():
+    for label, rank in ranks.items():
         if times: pause(2.5)
         data = leaderboard(uid, rank, fetch)
-        times[label] = verify_rank(data, rank, seen)
+        times[label] = verify_rank(data, rank, seen, REQUIRED_PLAYERS[kind])
         evidence[label] = {"position": rank, "playerCount": data["playercount"],
                            "observedAtUtc": iso(int(clock())),
                            "url": f"https://trackmania.io/api/leaderboard/map/{uid}?length=1&offset={rank - 1}"}
@@ -141,14 +148,15 @@ def capture(uid, fetch=fetch_json, clock=time.time, pause=time.sleep):
     return times, evidence, int(clock())
 
 
-def count_players(uid, fetch=fetch_json):
+def count_players(uid, fetch=fetch_json, *, kind="campaign"):
+    minimum = REQUIRED_PLAYERS[kind]
     data = fetch(f"https://trackmania.io/api/leaderboard/map/{uid}?length=1")
     if (type(data) is not dict or data.get("lockedLeaderboard") is not False or
             type(data.get("playercount")) is not int or data["playercount"] < 0):
         raise ValueError("player count unavailable")
     count = data["playercount"]
-    if count >= 5000:
-        verify_rank(leaderboard(uid, 5000, fetch), 5000, set())
+    if count >= minimum:
+        verify_rank(leaderboard(uid, minimum, fetch), minimum, set(), minimum)
     return count
 
 
@@ -168,8 +176,9 @@ class Store:
         self.open_request = open_request or build_opener(NoRedirect).open
 
     def request(self, endpoint, payload=None):
-        if not (endpoint.startswith("rpc/pm_") or endpoint.startswith("map_medals?") or
-                endpoint.startswith("map_medal_publications?")):
+        if not (endpoint.startswith("rpc/pm7_") or endpoint.startswith("rpc/pm_public_catalog") or
+                endpoint.startswith("map_medals?") or endpoint.startswith("map_medal_publications?") or
+                endpoint.startswith("pm_revised_medals?") or endpoint.startswith("pm_revised_medal_publications?")):
             raise ValueError("unapproved Supabase operation")
         body = json.dumps(payload).encode() if payload is not None else None
         headers = {"apikey": self.key, "Accept": "application/json", "Content-Type": "application/json"}
@@ -190,7 +199,7 @@ class Store:
     def rpc(self, name, **params):
         if name not in ("register", "observe", "retry", "publish"):
             raise ValueError("unknown publisher operation")
-        return self.request("rpc/pm_" + name, params)
+        return self.request("rpc/pm7_" + name, params)
 
     def states(self, uids):
         if not uids: return []
@@ -199,7 +208,7 @@ class Store:
         rows = []
         for offset in range(0, len(uids), 100):
             names = ",".join(uids[offset:offset + 100])
-            page = self.request("map_medals?select=map_uid,status,resume_status,eligible_at,capture_due_at,retry_at" +
+            page = self.request("pm_revised_medals?select=map_uid,status,resume_status,eligible_at,capture_due_at,retry_at" +
                                 "&map_uid=in.%28" + quote(names, safe=",") + "%29&limit=100")
             if type(page) is not list or len(page) > 100:
                 raise ValueError("invalid Supabase map state page")
@@ -210,7 +219,7 @@ class Store:
         # Old low-traffic cards remain eligible even after their TOTD month
         # disappears from discovery. Rotate the oldest ten checks per cycle.
         current = quote(iso(int(time.time())), safe="")
-        return self.request("map_medals?select=map_uid,status,retry_at,checked_at&status=neq.published" +
+        return self.request("pm_revised_medals?select=map_uid,map_type,status,retry_at,checked_at&status=neq.published" +
                             "&or=%28status.neq.retry_pending,retry_at.lte." + current + "%29" +
                             "&order=checked_at.asc.nullsfirst&limit=10")
 
@@ -231,13 +240,15 @@ def run(maps, store, *, fetch=fetch_json, clock=time.time, pause=time.sleep):
     for state in store.pending():
         uid = state["map_uid"]
         if not UID.fullmatch(uid): raise ValueError("invalid UID in persistent queue")
+        kind = state["map_type"]
+        if kind not in RANKS_BY_TYPE: raise ValueError("invalid persisted map type")
         try:
-            players = count_players(uid, fetch)
+            players = count_players(uid, fetch, kind=kind)
             status = store.rpc("observe", uid=uid, players=players)["status"]
             print(f"{uid}: {status} ({players} players)")
             if status != "ready_to_capture": continue
-            times, evidence, captured = capture(uid, fetch, clock, pause)
-            if min(x["playerCount"] for x in evidence.values()) < 5000:
+            times, evidence, captured = capture(uid, fetch, clock, pause, kind=kind)
+            if min(x["playerCount"] for x in evidence.values()) < REQUIRED_PLAYERS[kind]:
                 raise ValueError("player count dropped before capture")
             published = store.rpc("publish", uid=uid, platinum=times["platinum"], emerald=times["emerald"],
                                   diamond=times["diamond"], wr=times["wr"], captured=iso(captured),

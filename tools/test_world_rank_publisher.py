@@ -20,7 +20,7 @@ def supplier(url, *, players=6000, author=25500, error=False, ties=False):
         return {"mapUid": UID, "name": MAP["name"], "mapType": "TrackMania\\TM_Race",
                 "author": NADEO_ACCOUNT, "authorScore": author, "isPlayable": True}
     rank = int(url.split("offset=")[1]) + 1 if "offset=" in url else 1
-    times = {1: 19000, 200: 20000, 1000: 22000, 5000: 24000}
+    times = {1: 19000, 100: 19800, 200: 20000, 500: 21000, 1000: 22000, 2500: 23000, 5000: 24000}
     if ties: times[200] = times[1000] = 22000
     return {"lockedLeaderboard": False, "playercount": players,
             "tops": [{"position": rank, "time": times[rank], "score": times[rank],
@@ -36,7 +36,9 @@ class FakeStore:
 
     def rpc(self, name, **values):
         self.calls.append((name, values))
-        if name == "register": self.registered = True
+        if name == "register":
+            self.registered = True
+            self.kind = values["kind"]
         if name == "observe": return {"status": self.status}
         if name == "publish":
             if self.published: return False
@@ -51,7 +53,7 @@ class FakeStore:
 
     def pending(self):
         if self.registered and not self.published:
-            return [{"map_uid": UID, "status": "waiting_initial_delay", "retry_at": None}]
+            return [{"map_uid": UID, "map_type": self.kind, "status": "waiting_initial_delay", "retry_at": None}]
         return []
 
 
@@ -86,6 +88,7 @@ class WorldRankTests(unittest.TestCase):
         self.assertEqual(store.states([str(n).zfill(27) for n in range(101)]), [])
         self.assertEqual(len(calls), 2)
         self.assertIn("limit=100", calls[0])
+        self.assertTrue(calls[0].startswith("pm_revised_medals?"))
 
     def test_discovery_requires_explicit_future_activation_boundary(self):
         maps = [{"releaseAt": "2026-09-30T17:00:00Z"},
@@ -100,18 +103,29 @@ class WorldRankTests(unittest.TestCase):
     def test_exact_ranks_ignore_author_and_keep_ties(self):
         times, evidence, captured = capture(UID, lambda url: supplier(url, author=10000, ties=True),
                                              clock=lambda: epoch(RELEASE) + 4 * 3600, pause=lambda _: None)
-        self.assertEqual([times[k] for k in ("platinum", "emerald", "diamond")], [24000, 22000, 22000])
-        self.assertEqual([evidence[k]["position"] for k in ("platinum", "emerald", "diamond")], [5000, 1000, 200])
+        self.assertEqual([times[k] for k in ("platinum", "emerald", "diamond")], [23000, 22000, 22000])
+        self.assertEqual([evidence[k]["position"] for k in ("platinum", "emerald", "diamond")], [2500, 1000, 200])
         self.assertEqual(captured, epoch(RELEASE) + 4 * 3600)
 
-    def test_missing_5000th_blocks_publication(self):
+    def test_missing_2500th_blocks_new_publication(self):
         with self.assertRaises(ValueError):
-            count_players(UID, lambda url: supplier(url, players=6000) if "offset" not in url else supplier(url, players=4000))
+            count_players(UID, lambda url: supplier(url, players=6000) if "offset" not in url else supplier(url, players=2499))
 
-    def test_4999_players_never_enter_capture(self):
-        self.assertEqual(count_players(UID, lambda url: supplier(url, players=4999)), 4999)
+    def test_totd_requires_exact_2500th_and_not_5000th(self):
+        self.assertEqual(count_players(UID, lambda url: supplier(url, players=2500), kind="totd"), 2500)
+        self.assertEqual(count_players(UID, lambda url: supplier(url, players=2499), kind="totd"), 2499)
+        with self.assertRaises(ValueError):
+            count_players(UID, lambda url: supplier(url, players=2500) if "offset" not in url else supplier(url, players=2000),
+                          kind="totd")
+        goals, evidence, _ = capture(UID, lambda url: supplier(url, players=2500, author=18000),
+                                      kind="totd", pause=lambda _: None)
+        self.assertEqual([goals[k] for k in ("platinum", "emerald", "diamond")], [23000, 21000, 19800])
+        self.assertEqual([evidence[k]["position"] for k in ("platinum", "emerald", "diamond")], [2500, 500, 100])
+
+    def test_2499_players_never_enter_capture(self):
+        self.assertEqual(count_players(UID, lambda url: supplier(url, players=2499)), 2499)
         store = FakeStore("waiting_for_players")
-        run([MAP], store, fetch=lambda url: supplier(url, players=4999), pause=lambda _: None)
+        run([MAP], store, fetch=lambda url: supplier(url, players=2499), pause=lambda _: None)
         self.assertEqual([name for name, _ in store.calls], ["register", "observe"])
 
     def test_popular_totd_and_campaign_call_publish_at_initial_deadline(self):
@@ -122,7 +136,8 @@ class WorldRankTests(unittest.TestCase):
                     pause=lambda _: None)
                 self.assertEqual([name for name, _ in store.calls], ["register", "observe", "publish"])
                 published = store.calls[-1][1]
-                self.assertEqual([published[k] for k in ("platinum", "emerald", "diamond")], [24000, 22000, 20000])
+                expected = [23000, 21000, 19800] if kind == "totd" else [23000, 22000, 20000]
+                self.assertEqual([published[k] for k in ("platinum", "emerald", "diamond")], expected)
                 self.assertEqual(published["captured"], iso(epoch(RELEASE) + 8 * 86400))
                 run([{**MAP, "type": kind}], store, fetch=supplier, pause=lambda _: None)
                 self.assertEqual(sum(name == "publish" for name, _ in store.calls), 1)
@@ -138,7 +153,7 @@ class WorldRankTests(unittest.TestCase):
     def test_api_failure_marks_retry_without_partial_goals(self):
         store = FakeStore("ready_to_capture")
         def partial(url):
-            if "offset=999" in url: raise OSError("supplier unavailable")
+            if "offset=499" in url: raise OSError("supplier unavailable")
             return supplier(url)
         run([MAP], store, fetch=partial, pause=lambda _: None)
         self.assertEqual([name for name, _ in store.calls], ["register", "observe", "retry"])

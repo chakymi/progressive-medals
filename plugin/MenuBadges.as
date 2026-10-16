@@ -154,6 +154,49 @@ namespace PM {
         } catch { return "Menu : vérification interrompue : " + getExceptionInfo(); }
     }
 
+    // Read-only inspection on click: TOTD uses a different menu than the Fall
+    // grid. Identify real calendar controls before ever drawing onto them.
+    // Report control IDs only, never label contents, account IDs or map records.
+    string CheckTotdMenu() {
+        try {
+            CTrackMania@ app = cast<CTrackMania@>(GetApp());
+            if (app is null || app.CurrentPlayground !is null || app.MenuManager is null ||
+                    app.MenuManager.MenuCustom_CurrentManiaApp is null)
+                return "TOTD : ouvrir le calendrier depuis le menu principal.";
+            auto layers = app.MenuManager.MenuCustom_CurrentManiaApp.UILayers;
+            for (uint i = 0; i < layers.Length && i < 100; i++) {
+                CGameUILayer@ layer = layers[i];
+                if (layer is null || !layer.IsVisible || layer.LocalPage is null) continue;
+                CGameManialinkPage@ page = layer.LocalPage;
+                CGameManialinkLabel@ title = cast<CGameManialinkLabel@>(page.GetFirstChild("label-title"));
+                string heading = title is null ? "" : Text::StripFormatCodes(string(title.Value)).ToLower();
+                if (heading.Contains("automne") || heading.Contains("fall")) continue;
+                uint candidateCount = 0;
+                string[] ids;
+                uint limit = page.ControlsCache.Length;
+                if (limit > 4000) limit = 4000;
+                for (uint j = 0; j < limit; j++) {
+                    CGameManialinkControl@ control = page.ControlsCache[j];
+                    if (control is null || !control.Visible) continue;
+                    string id = control.ControlId;
+                    string lower = id.ToLower();
+                    if (id.Length == 0 || id.Length > 80 ||
+                            !(lower.Contains("day") || lower.Contains("calendar") || lower.Contains("totd") ||
+                              lower.Contains("month") || lower.Contains("map"))) continue;
+                    candidateCount++;
+                    if (ids.Length < 10) ids.InsertLast(id);
+                }
+                if (candidateCount < 8) continue;
+                string found = "";
+                for (uint n = 0; n < ids.Length; n++) found += (n == 0 ? "" : ", ") + ids[n];
+                return "TOTD : " + candidateCount + " contrôles carte/jour visibles ; IDs : " + found;
+            }
+            return "TOTD : aucune grille calendrier détectée ; ouvrir le calendrier et relancer.";
+        } catch {
+            return "TOTD : inspection interrompue pendant la navigation du menu.";
+        }
+    }
+
     void RefreshMenuPbs() {
         if (menuLoading || menuUids.Length != 25) return;
         if (menuLastAttempt != 0 && Time::Now - menuLastAttempt < 300000) {

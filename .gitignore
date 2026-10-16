@@ -41,6 +41,7 @@
 !/tools/check_official_fall_roster.py
 !/tools/check_fall_rank_capacity.py
 !/tools/verify_fall_migration.py
+!/tools/verify_world_revision.py
 !/tools/test_check_official_fall_roster.py
 !/tools/test_check_service_access.py
 !/tools/discover_official_maps.py
@@ -50,6 +51,7 @@
 !/tools/test_nadeo_check.py
 !/tools/test_discover_official_maps.py
 !/tools/test_world_rank_sql.cjs
+!/tools/test_world_rank_v7_sql.cjs
 !/tools/backup_world_rank.py
 !/tools/test_world_rank_publisher.py
 !/tools/world-rank-manifest.json
@@ -58,6 +60,7 @@
 !/supabase/
 !/supabase/migrations/
 !/supabase/migrations/202610150001_world_rank_medals.sql
+!/supabase/migrations/202610160001_world_ranks_v7.sql
 !/supabase/functions/
 !/supabase/functions/progressive-medals-catalogue/
 !/supabase/functions/progressive-medals-catalogue/index.ts

@@ -13,6 +13,9 @@ namespace PM {
     dictionary worldCatalog;
     dictionary worldStatus;
     dictionary worldDue;
+    dictionary worldKinds;
+    dictionary worldReleases;
+    dictionary worldPolicies;
     uint worldVersion = 0;
     string worldError = "";
     bool worldDownloading = false;
@@ -193,8 +196,27 @@ namespace PM {
         return due;
     }
 
+    string WorldKindFor(const string &in uid) {
+        string kind;
+        worldKinds.Get(uid, kind);
+        return kind;
+    }
+
+    int64 WorldReleaseFor(const string &in uid) {
+        int64 released = 0;
+        worldReleases.Get(uid, released);
+        return released;
+    }
+
+    uint WorldPolicyFor(const string &in uid) {
+        uint policy = 0;
+        worldPolicies.Get(uid, policy);
+        return policy;
+    }
+
     bool DecodeWorld(const Json::Value@ root, dictionary &out goals, dictionary &out statuses,
-                     dictionary &out dueDates, uint &out version, string &out reason) {
+                     dictionary &out dueDates, dictionary &out kinds, dictionary &out releases, dictionary &out policies,
+                     uint &out version, string &out reason) {
         reason = "";
         if (root is null || root.GetType() != Json::Type::Object || !root.HasKey("schema") ||
                 double(root.Get("schema")) != 3.0 || !root.HasKey("version") || !root.HasKey("maps")) {
@@ -229,7 +251,8 @@ namespace PM {
                     string(title).Length > 160 || state is null || state.GetType() != Json::Type::String ||
                     kind is null || kind.GetType() != Json::Type::String ||
                     (string(kind) != "campaign" && string(kind) != "totd") ||
-                    calc is null || calc.GetType() != Json::Type::Number || double(calc) != 5) {
+                    calc is null || calc.GetType() != Json::Type::Number ||
+                    (double(calc) != 5 && double(calc) != 7)) {
                 reason = "métadonnées mondiales invalides"; return false;
             }
             int64 released = 0;
@@ -256,7 +279,8 @@ namespace PM {
                 const Json::Value@ source = entry.Get("source");
                 int64 due = 0;
                 int64 threshold = 0;
-                if (players < 5000 || !ReadStamp(entry, "captureDueAtUtc", due) ||
+                uint requiredPlayers = double(calc) == 7 ? 2500 : 5000;
+                if (players < requiredPlayers || !ReadStamp(entry, "captureDueAtUtc", due) ||
                         !ReadStamp(entry, "thresholdDetectedAtUtc", threshold) ||
                         (due != eligible && due != threshold + 3600) ||
                         !ReadInt(entry, "referenceWrMs", wr) || !ReadStamp(entry, "capturedAtUtc", captured) ||
@@ -269,7 +293,7 @@ namespace PM {
                 }
                 MapGoals@ goal = MapGoals();
                 goal.uid = uid; goal.name = string(title); goal.referenceWrMs = wr;
-                goal.calculationVersion = 5; goal.source = string(source);
+                goal.calculationVersion = uint(double(calc)); goal.source = string(source);
                 goal.releaseKind = string(kind); goal.availableAtUtc = eligible; goal.publishedAtUtc = published;
                 uint previous = MAX_TIME;
                 for (uint i = 0; i < COUNT; i++) {
@@ -299,6 +323,9 @@ namespace PM {
                 dueDates.Set(uid, due);
             } else { reason = "état mondial inconnu"; return false; }
             statuses.Set(uid, status);
+            kinds.Set(uid, string(kind));
+            releases.Set(uid, released);
+            policies.Set(uid, uint(double(calc)));
         }
         return true;
     }
@@ -307,9 +334,12 @@ namespace PM {
         dictionary next;
         dictionary statuses;
         dictionary dates;
+        dictionary kinds;
+        dictionary releases;
+        dictionary policies;
         uint version = 0;
         string reason;
-        if (!DecodeWorld(root, next, statuses, dates, version, reason)) {
+        if (!DecodeWorld(root, next, statuses, dates, kinds, releases, policies, version, reason)) {
             worldError = "Catalogue mondial refusé : " + reason; return false;
         }
         if (version <= worldVersion) return false;
@@ -317,7 +347,9 @@ namespace PM {
             try { Json::ToFile(IO::FromStorageFolder(WORLD_CACHE), root); }
             catch { warn("Progressive Medals: cache mondial non écrit : " + getExceptionInfo()); }
         }
-        worldCatalog = next; worldStatus = statuses; worldDue = dates; worldVersion = version; worldError = "";
+        worldCatalog = next; worldStatus = statuses; worldDue = dates;
+        worldKinds = kinds; worldReleases = releases; worldPolicies = policies;
+        worldVersion = version; worldError = "";
         return true;
     }
 
@@ -389,17 +421,22 @@ namespace PM {
             Json::Value@ tooEarly = Json::Parse("{\"schema\":2,\"version\":3,\"maps\":{\"test-UID\":{\"name\":\"Campagne\",\"authorMs\":100,\"referenceWrMs\":90,\"timesMs\":[99,97,93],\"release\":{\"kind\":\"campaign\",\"anchorAtUtc\":1700000000,\"availableAtUtc\":1700604800,\"wrCapturedAtUtc\":1700604799,\"publishedAtUtc\":1700604800}}}}");
             dictionary invalidSchedule;
             if (Decode(tooEarly, invalidSchedule, version, reason)) return "Échec : WR anticipé accepté";
-            Json::Value@ world = Json::Parse("{\"schema\":3,\"version\":5,\"maps\":{\"TEST12345678901234567890\":{\"name\":\"Test\",\"status\":\"published\",\"mapType\":\"totd\",\"calculationVersion\":5,\"releaseAtUtc\":1700000000,\"eligibleAtUtc\":1700003600,\"thresholdDetectedAtUtc\":1700000000,\"captureDueAtUtc\":1700003600,\"playerCount\":5000,\"capturedAtUtc\":1700007200,\"publishedAtUtc\":1700007201,\"referenceWrMs\":80,\"source\":\"trackmania.io/world-map-leaderboard\",\"timesMs\":[100,100,90]}}}");
+            Json::Value@ world = Json::Parse("{\"schema\":3,\"version\":5,\"maps\":{\"TEST12345678901234567890\":{\"name\":\"Test\",\"status\":\"published\",\"mapType\":\"totd\",\"calculationVersion\":7,\"releaseAtUtc\":1700000000,\"eligibleAtUtc\":1700003600,\"thresholdDetectedAtUtc\":1700000000,\"captureDueAtUtc\":1700003600,\"playerCount\":2500,\"capturedAtUtc\":1700007200,\"publishedAtUtc\":1700007201,\"referenceWrMs\":80,\"source\":\"trackmania.io/world-map-leaderboard\",\"timesMs\":[100,100,90]}}}");
             dictionary worldGoals;
             dictionary worldStates;
             dictionary worldDates;
-            if (!DecodeWorld(world, worldGoals, worldStates, worldDates, version, reason) || worldGoals.GetSize() != 1)
+            dictionary worldKindsTest;
+            dictionary worldReleasesTest;
+            dictionary worldPoliciesTest;
+            if (!DecodeWorld(world, worldGoals, worldStates, worldDates, worldKindsTest, worldReleasesTest, worldPoliciesTest,
+                             version, reason) || worldGoals.GetSize() != 1)
                 return "Échec catalogue mondial : " + reason;
             MapGoals@ worldGoal;
             worldGoals.Get("TEST12345678901234567890", @worldGoal);
-            if (worldGoal is null || !MatchesAuthor(worldGoal, 70) || worldGoal.times[0] != worldGoal.times[1])
+            if (worldGoal is null || worldGoal.calculationVersion != 7 || !MatchesAuthor(worldGoal, 70) ||
+                    worldGoal.times[0] != worldGoal.times[1])
                 return "Échec : Auteur/égalité mondiale refusé";
-            return "Chargeur v2/v5 OK : WR anticipé refusé, Auteur indépendant et égalités acceptées";
+            return "Chargeur v2/v5/v7 OK : WR anticipé refusé, Auteur indépendant et égalités acceptées";
         } catch { return "Échec chargeur : " + getExceptionInfo(); }
     }
 

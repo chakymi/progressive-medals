@@ -1,6 +1,7 @@
 namespace PM {
     string selfCheckResult = "";
     string menuCheckResult = "";
+    string totdCheckResult = "";
     void RenderWindow() {
         UI::SetNextWindowSize(440, 570, UI::Cond::FirstUseEver);
         if (UI::Begin("Progressive Medals", S_ShowWindow)) {
@@ -27,7 +28,8 @@ namespace PM {
             if (goals is null) {
                 string state = WorldStatusFor(currentUid);
                 if (state == "waiting_initial_delay") UI::TextWrapped("Médailles mondiales : en attente du délai initial.");
-                else if (state == "waiting_for_players") UI::TextWrapped("Médailles mondiales : en attente de 5 000 joueurs classés.");
+                else if (state == "waiting_for_players") UI::TextWrapped("Médailles mondiales : en attente de " +
+                    (WorldPolicyFor(currentUid) == 7 ? "2 500" : "5 000") + " joueurs classés.");
                 else if (state == "waiting_extra_hour") {
                     UI::TextWrapped("Médailles mondiales : délai supplémentaire après détection du seuil.");
                     int64 due = WorldDueFor(currentUid);
@@ -42,6 +44,10 @@ namespace PM {
                 UI::TextWrapped("Médailles non disponibles avant la publication commune.");
                 UI::Text("Disponibles à partir du " + Time::FormatStringUTC("%Y-%m-%d %H:%M UTC", goals.publishedAtUtc));
             } else {
+                if (goals.calculationVersion == 7)
+                    UI::TextDisabled(goals.releaseKind == "totd" ?
+                        "TOTD : rangs mondiaux 2 500 / 500 / 100" :
+                        "Campagne : rangs mondiaux 2 500 / 1 000 / 200");
                 int level = HighestLevel(goals, currentPb);
                 if (currentPb == 0) UI::Text("Prochain objectif : Platine (établir un PB)");
                 else if (level == int(COUNT) - 1) UI::Text("Toutes les médailles obtenues !");
@@ -75,6 +81,8 @@ namespace PM {
             UI::SameLine();
             if (UI::Button("Vérifier menu / positions")) menuCheckResult = CheckMenuLoader();
             if (menuCheckResult.Length > 0) UI::TextWrapped(menuCheckResult);
+            if (UI::Button("Inspecter la grille TOTD")) totdCheckResult = CheckTotdMenu();
+            if (totdCheckResult.Length > 0) UI::TextWrapped(totdCheckResult);
             UI::Separator();
             if (UI::Button("Actualiser le catalogue HTTPS")) startnew(RefreshCatalog);
             if (S_WorldCatalogUrl.Length > 0) {

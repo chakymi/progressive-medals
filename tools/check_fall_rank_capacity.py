@@ -2,14 +2,17 @@
 import time
 
 from publish_fall_2026 import load_roster
-from world_rank_publisher import count_players
+from world_rank_publisher import fetch_json, leaderboard, verify_rank
 
 
 def main():
     roster = load_roster()
     counts = []
     for item in roster["maps"]:
-        counts.append((item["number"], count_players(item["uid"])))
+        uid = item["uid"]
+        data = fetch_json(f"https://trackmania.io/api/leaderboard/map/{uid}?length=1")
+        verify_rank(leaderboard(uid, 5000), 5000, set(), 5000)
+        counts.append((item["number"], data["playercount"]))
         time.sleep(2.5)  # No concurrent map/leaderboard requests.
     eligible = [number for number, count in counts if count >= 5000]
     waiting = [number for number, count in counts if count < 5000]

@@ -18,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--private-env", type=Path, help="optional existing private .env; never copied or logged")
+    parser.add_argument("--include-v7", action="store_true", help="also preserve published revised rows and their journal")
     args = parser.parse_args()
     destination = args.output.resolve()
     root = Path(__file__).resolve().parent.parent
@@ -45,10 +46,20 @@ def main():
         raise ValueError("backup incomplete: UID mismatch")
     snapshot = {"capturedAtUtc": iso(int(time.time())), "map_medals": rows,
                 "map_medal_publications": evidence}
+    revised_count = 0
+    if args.include_v7:
+        revised = pages("pm_revised_medals?select=*&status=eq.published")
+        revised_audit = pages("pm_revised_medal_publications?select=*")
+        if (len(revised) != len(revised_audit) or len({row["map_uid"] for row in revised}) != len(revised) or
+                {row["map_uid"] for row in revised} != {row["map_uid"] for row in revised_audit}):
+            raise ValueError("backup incomplete: revised publication/evidence mismatch")
+        snapshot["pm_revised_medals"] = revised
+        snapshot["pm_revised_medal_publications"] = revised_audit
+        revised_count = len(revised)
     digest = hashlib.sha256(json.dumps(snapshot, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     snapshot["sha256"] = digest
     write_new(destination, snapshot)  # Never overwrite an existing snapshot.
-    print(f"Private snapshot stored: {len(rows)} published maps, sha256={digest}")
+    print(f"Private snapshot stored: {len(rows)} historical and {revised_count} revised maps, sha256={digest}")
 
 
 if __name__ == "__main__":
