@@ -1,9 +1,9 @@
 [meta]
-name = "Progressive Medals"
+name = "Progressive Medals Lite + Menu"
 author = "chakymi"
 category = "Race"
-version = "0.3.0"
+version = "0.2.1"
 
 [script]
+# The player's authenticated campaign PBs come from NadeoServices.
 dependencies = [ "NadeoServices" ]
-optional_dependencies = [ "UltimateMedalsExtended", "WarriorMedals", "ChampionMedals" ]
