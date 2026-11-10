@@ -1,313 +1,340 @@
-namespace PM {
+// Campaign badge overlay. Uses a fixed Fall 2026 snapshot; no global leaderboard polling.
+namespace PML {
+    class MenuTarget {
+        uint[] times;
+    }
+
     string[] menuUids;
+    dictionary menuTargets;
     dictionary menuPbs;
     nvg::Texture@[] menuTextures;
-    string menuAccount = ""; // In-memory only. Never written to disk or logged.
-    string menuStatus = "Campagne non chargée";
+    string menuAccount = "";
+    string menuStatus = "En attente du menu Fall 2026";
     uint64 menuLastAttempt = 0;
     bool menuLoading = false;
-    bool menuNeedsRefresh = false;
+    const uint64 PB_MIN_REFRESH_MS = 1800000;
+    const uint64 PB_HTTP_TIMEOUT_MS = 12000;
 
-    // A native TimeAttack PB already saved before School Mode is still valid.
-    // Never use a simulated PB or a result shown only on the finish screen.
-    void RememberOfficialPb(const string &in uid, uint best) {
-        if (best == 0 || best == uint(-1) || menuUids.Length != 25) return;
-        bool inCampaign = false;
-        for (uint i = 0; i < menuUids.Length; i++) { if (menuUids[i] == uid) { inCampaign = true; break; } }
-        if (!inCampaign) return;
-        MapGoals@ goal = FindGoals(uid);
-        if (!IsReleased(goal) || (goal.calculationVersion < 5 && best > goal.authorMs)) return;
-        if (!NadeoServices::IsAuthenticated("NadeoLiveServices")) return;
-        string account = NadeoServices::GetAccountID();
-        if (account.Length == 0) return;
-        if (menuAccount.Length > 0 && menuAccount != account) menuPbs.DeleteAll();
-        menuAccount = account;
-        uint previous = 0;
-        if (!menuPbs.Get(uid, previous) || best < previous) {
-            menuPbs.Set(uid, best);
-            menuStatus = menuPbs.GetSize() + "/25 PB natifs déjà lus, autres cartes en attente";
-            menuNeedsRefresh = true;
-        }
-    }
-
-    void InitMenuBadges() {
-        menuUids.RemoveRange(0, menuUids.Length);
-        try {
-            Json::Value@ root = Json::FromFile("catalog/fall-2026-order.json");
-            if (root is null || root.GetType() != Json::Type::Object || !root.HasKey("campaign") ||
-                    string(root.Get("campaign")) != "Fall 2026" || !root.HasKey("mapUids")) throw("ordre de campagne invalide");
-            Json::Value@ list = root.Get("mapUids");
-            if (list is null || list.GetType() != Json::Type::Array || list.Length != 25) throw("la campagne doit contenir 25 UID");
-            dictionary seen;
-            for (uint i = 0; i < 25; i++) {
-                Json::Value@ value = list[i];
-                if (value is null || value.GetType() != Json::Type::String) throw("UID non textuel");
-                string uid = string(value);
-                if (uid.Length < 20 || uid.Length > 40 || uid.Contains("/") || seen.Exists(uid)) throw("UID doublon ou invalide");
-                seen.Set(uid, true);
-                menuUids.InsertLast(uid);
-            }
-            menuStatus = "25 cartes Fall 2026 prêtes";
-        } catch {
-            menuUids.RemoveRange(0, menuUids.Length);
-            menuStatus = "Ordre des cartes invalide";
-            warn("Progressive Medals: ordre menu refusé : " + getExceptionInfo());
-        }
-        for (uint i = 0; i < COUNT; i++) {
-            nvg::Texture@ image;
-            // The supplied PNGs are much larger than a menu badge. Mipmaps
-            // preserve their colors/detail instead of aliasing bright pixels.
-            try { @image = nvg::LoadTexture(ICON_FILES[i], int(nvg::TextureFlags::GenerateMipmaps)); }
-            catch { warn("Progressive Medals: texture menu indisponible : " + ICON_FILES[i]); }
-            menuTextures.InsertLast(image);
-        }
-    }
-
-    CGameManialinkPage@ FindFallMenuPage() {
-        try {
-            CTrackMania@ app = cast<CTrackMania@>(GetApp());
-            if (app is null || app.Editor !is null || app.CurrentPlayground !is null || app.MenuManager is null ||
-                    app.MenuManager.MenuCustom_CurrentManiaApp is null) return null;
-            auto layers = app.MenuManager.MenuCustom_CurrentManiaApp.UILayers;
-            for (uint i = 0; i < layers.Length; i++) {
-                CGameUILayer@ layer = layers[i];
-                if (layer is null || !layer.IsVisible || layer.LocalPage is null) continue;
-                CGameManialinkPage@ page = layer.LocalPage;
-                if (page.GetFirstChild("frame-map-0-0") is null) continue;
-                CGameManialinkLabel@ label = cast<CGameManialinkLabel@>(page.GetFirstChild("label-title"));
-                if (label is null) continue;
-                string title = Text::StripFormatCodes(string(label.Value)).ToLower();
-                if (!title.Contains("2026") || (!title.Contains("automne") && !title.Contains("fall"))) continue;
-                // Nadeo reuses the same map frames for rankings by country/club.
-                // Draw only while the medals tab is active, never over positions.
-                CGameManialinkControl@ zoneTab = page.GetFirstChild("frame-zone-selection");
-                CGameManialinkControl@ clubTab = page.GetFirstChild("frame-pinned-club");
-                if ((zoneTab !is null && zoneTab.Visible) || (clubTab !is null && clubTab.Visible)) continue;
-                return page;
-            }
-        } catch {
-            // Menu pages are destroyed/rebuilt while navigating. Retry on the next frame.
-        }
-        return null;
-    }
-
-    // Measure the displayed grid. The native medal quad is not present in all
-    // menu variants; frame spacing provides a bounded fallback anchor without
-    // modifying any game controls or borrowing other plugins' coordinates.
-    bool GetMenuGridSpacing(CGameManialinkPage@ page, vec2 &out spacing) {
-        if (page is null) return false;
-        CGameManialinkFrame@ first = cast<CGameManialinkFrame@>(page.GetFirstChild("frame-map-0-0"));
-        CGameManialinkFrame@ right = cast<CGameManialinkFrame@>(page.GetFirstChild("frame-map-1-0"));
-        CGameManialinkFrame@ below = cast<CGameManialinkFrame@>(page.GetFirstChild("frame-map-0-1"));
-        if (first is null || right is null || below is null) return false;
-        vec3 p = first.AbsolutePosition;
-        vec3 r = right.AbsolutePosition;
-        vec3 b = below.AbsolutePosition;
-        spacing = vec2(r.x - p.x, b.y - p.y);
-        return spacing.x >= 8.0f && spacing.x <= 80.0f && spacing.y <= -3.0f && spacing.y >= -45.0f;
-    }
-
-    bool DecodeMenuPbs(const Json::Value@ results, dictionary &out next) {
-        if (results is null || results.GetType() != Json::Type::Array || results.Length > 25 || menuUids.Length != 25) return false;
-        for (uint i = 0; i < results.Length; i++) {
-            const Json::Value@ row = results[i];
-            if (row is null || row.GetType() != Json::Type::Object || !row.HasKey("mapUid") || !row.HasKey("groupUid")) return false;
-            const Json::Value@ mapUid = row.Get("mapUid");
-            const Json::Value@ group = row.Get("groupUid");
-            if (mapUid is null || mapUid.GetType() != Json::Type::String || group is null ||
-                    group.GetType() != Json::Type::String || string(group) != "Personal_Best") return false;
-            string uid = string(mapUid);
-            bool inCampaign = false;
-            for (uint j = 0; j < menuUids.Length; j++) { if (menuUids[j] == uid) { inCampaign = true; break; } }
-            uint pb = 0;
-            if (!inCampaign || next.Exists(uid) || !ReadInt(row, "score", pb)) return false;
-            next.Set(uid, pb);
-        }
+    // Keep type and range checks here: the catalog and API are data, not code.
+    bool ReadMenuMs(const Json::Value@ object, const string &in key, uint &out value) {
+        value = 0;
+        if (object is null || !object.HasKey(key)) return false;
+        const Json::Value@ node = object.Get(key);
+        if (node is null || node.GetType() != Json::Type::Number) return false;
+        double n = double(node);
+        if (n < 1 || n > double(MAX_TIME_MS) || n != double(uint(n))) return false;
+        value = uint(n);
         return true;
     }
 
-    string CheckMenuLoader() {
-        if (menuUids.Length != 25 || menuTextures.Length != COUNT) return "Menu : roster ou textures incomplets";
+    void InitMenuBadges() {
         try {
-            string uid = menuUids[5];
-            string one = "[{\"mapUid\":\"" + uid + "\",\"groupUid\":\"Personal_Best\",\"score\":26964}]";
-            dictionary correct;
-            if (!DecodeMenuPbs(Json::Parse(one), correct) || correct.GetSize() != 1) return "Menu : PB officiel de test refusé";
-            dictionary duplicate;
-            if (DecodeMenuPbs(Json::Parse("[" + one.SubStr(1, one.Length - 2) + "," + one.SubStr(1, one.Length - 2) + "]"), duplicate))
-                return "Menu : PB doublon accepté";
-            Json::Value@ rank = Json::Parse("{\"mapUid\":\"" + uid + "\",\"tops\":[{\"zoneId\":\"301e1b69-7e13-11e8-8060-e284abfd2bc4\",\"top\":[{\"score\":26894,\"position\":641}]}]}");
-            if (ParseWorldPosition(rank, uid, 26894) != 641 || ParseWorldPosition(rank, uid, 26893) != -1)
-                return "Positions : parseur de rang incohérent";
-            CGameManialinkPage@ page = FindFallMenuPage();
-            if (page is null) return "Menu OK : 25 UID, PB et rang validés ; ouvrir l'onglet Médailles Fall 2026 pour tester les badges";
-            CGameManialinkFrame@ frame = cast<CGameManialinkFrame@>(page.GetFirstChild("frame-map-0-0"));
-            if (frame is null) return "Menu détecté sans première case native";
-            vec2 spacing;
-            CGameManialinkControl@ medal = frame.GetFirstChild("quad-medal");
-            if (medal !is null && medal.Visible)
-                return "Menu OK : ancre de médaille native et " + menuPbs.GetSize() + " PB disponibles";
-            if (!GetMenuGridSpacing(page, spacing))
-                return "Menu détecté, mais cadres voisins introuvables ; " + menuPbs.GetSize() + " PB disponibles";
-            return "Menu OK : ancre par cases (écart " + spacing.x + "/" + spacing.y + "), " +
-                menuPbs.GetSize() + " PB disponibles";
-        } catch { return "Menu : vérification interrompue : " + getExceptionInfo(); }
+            Json::Value@ root = Json::FromFile("catalog/fall-2026-goals.json");
+            if (root is null || root.GetType() != Json::Type::Object ||
+                    !root.HasKey("campaign") || string(root.Get("campaign")) != "Fall 2026" ||
+                    !root.HasKey("maps"))
+                throw("Catalogue Fall 2026 invalide");
+            const Json::Value@ maps = root.Get("maps");
+            if (maps is null || maps.GetType() != Json::Type::Array || maps.Length != 25)
+                throw("Le menu Fall 2026 doit contenir 25 cartes");
+
+            dictionary seen;
+            for (uint i = 0; i < maps.Length; i++) {
+                const Json::Value@ row = maps[i];
+                if (row is null || row.GetType() != Json::Type::Object ||
+                        !row.HasKey("uid") || !row.HasKey("platinum_ms") ||
+                        !row.HasKey("emerald_ms") || !row.HasKey("diamond_ms"))
+                    throw("Entrée de catalogue incomplète");
+
+                string uid = string(row.Get("uid"));
+                if (!IsValidUid(uid) || seen.Exists(uid))
+                    throw("UID manquant ou dupliqué");
+                uint p = 0;
+                uint e = 0;
+                uint d = 0;
+                if (!ReadMenuMs(row, "platinum_ms", p) ||
+                        !ReadMenuMs(row, "emerald_ms", e) ||
+                        !ReadMenuMs(row, "diamond_ms", d) || p < e || e < d)
+                    throw("Temps de médailles invalides");
+                MenuTarget@ target = MenuTarget();
+                uint[] times = {p, e, d};
+                target.times = times;
+                menuTargets.Set(uid, @target);
+                menuUids.InsertLast(uid);
+                seen.Set(uid, true);
+            }
+            menuStatus = "25 cartes Fall 2026 chargées";
+        } catch {
+            menuUids.RemoveRange(0, menuUids.Length);
+            menuTargets.DeleteAll();
+            menuStatus = "Catalogue Fall 2026 indisponible";
+            warn("Progressive Medals: " + getExceptionInfo());
+        }
+
+        const string[] paths = {"assets/platinum.png", "assets/emerald.png", "assets/diamond.png"};
+        for (uint i = 0; i < paths.Length; i++) {
+            nvg::Texture@ texture;
+            try {
+                @texture = nvg::LoadTexture(paths[i], int(nvg::TextureFlags::GenerateMipmaps));
+            } catch {
+                warn("Progressive Medals: PNG manquant: " + paths[i]);
+            }
+            menuTextures.InsertLast(texture);
+        }
     }
 
-    // Read-only inspection on click: TOTD uses a different menu than the Fall
-    // grid. Identify real calendar controls before ever drawing onto them.
-    // Report control IDs only, never label contents, account IDs or map records.
-    string CheckTotdMenu() {
+    // Trackmania UI control names may change between game releases.
+    CGameManialinkPage@ FindFallMenuPage() {
         try {
             CTrackMania@ app = cast<CTrackMania@>(GetApp());
-            if (app is null || app.CurrentPlayground !is null || app.MenuManager is null ||
-                    app.MenuManager.MenuCustom_CurrentManiaApp is null)
-                return "TOTD : ouvrir le calendrier depuis le menu principal.";
+            if (app is null || app.Editor !is null || app.CurrentPlayground !is null ||
+                    app.MenuManager is null || app.MenuManager.MenuCustom_CurrentManiaApp is null)
+                return null;
             auto layers = app.MenuManager.MenuCustom_CurrentManiaApp.UILayers;
             for (uint i = 0; i < layers.Length && i < 100; i++) {
                 CGameUILayer@ layer = layers[i];
                 if (layer is null || !layer.IsVisible || layer.LocalPage is null) continue;
                 CGameManialinkPage@ page = layer.LocalPage;
-                CGameManialinkLabel@ title = cast<CGameManialinkLabel@>(page.GetFirstChild("label-title"));
-                string heading = title is null ? "" : Text::StripFormatCodes(string(title.Value)).ToLower();
-                if (heading.Contains("automne") || heading.Contains("fall")) continue;
-                uint candidateCount = 0;
-                string[] ids;
-                uint limit = page.ControlsCache.Length;
-                if (limit > 4000) limit = 4000;
-                for (uint j = 0; j < limit; j++) {
-                    CGameManialinkControl@ control = page.ControlsCache[j];
-                    if (control is null || !control.Visible) continue;
-                    string id = control.ControlId;
-                    string lower = id.ToLower();
-                    if (id.Length == 0 || id.Length > 80 ||
-                            !(lower.Contains("day") || lower.Contains("calendar") || lower.Contains("totd") ||
-                              lower.Contains("month") || lower.Contains("map"))) continue;
-                    candidateCount++;
-                    if (ids.Length < 10) ids.InsertLast(id);
-                }
-                if (candidateCount < 8) continue;
-                string found = "";
-                for (uint n = 0; n < ids.Length; n++) found += (n == 0 ? "" : ", ") + ids[n];
-                return "TOTD : " + candidateCount + " contrôles carte/jour visibles ; IDs : " + found;
+                if (page.GetFirstChild("frame-map-0-0") is null) continue;
+                CGameManialinkLabel@ title =
+                    cast<CGameManialinkLabel@>(page.GetFirstChild("label-title"));
+                if (title is null) continue;
+                string caption = Text::StripFormatCodes(string(title.Value)).ToLower();
+                if (!caption.Contains("2026") ||
+                        (!caption.Contains("automne") && !caption.Contains("fall")))
+                    continue;
+                CGameManialinkControl@ zone = page.GetFirstChild("frame-zone-selection");
+                CGameManialinkControl@ club = page.GetFirstChild("frame-pinned-club");
+                if ((zone !is null && zone.Visible) || (club !is null && club.Visible))
+                    continue;
+                return page;
             }
-            return "TOTD : aucune grille calendrier détectée ; ouvrir le calendrier et relancer.";
         } catch {
-            return "TOTD : inspection interrompue pendant la navigation du menu.";
+            // Menu pages are transient while navigating.
         }
+        return null;
     }
 
-    void RefreshMenuPbs() {
-        if (menuLoading || menuUids.Length != 25) return;
-        if (menuLastAttempt != 0 && Time::Now - menuLastAttempt < 300000) {
-            menuStatus = "Attendre 5 minutes entre les demandes de PB officiels"; return;
+    bool GetFallGridSpacing(CGameManialinkPage@ page, vec2 &out spacing) {
+        if (page is null) return false;
+        CGameManialinkFrame@ first =
+            cast<CGameManialinkFrame@>(page.GetFirstChild("frame-map-0-0"));
+        CGameManialinkFrame@ right =
+            cast<CGameManialinkFrame@>(page.GetFirstChild("frame-map-1-0"));
+        CGameManialinkFrame@ below =
+            cast<CGameManialinkFrame@>(page.GetFirstChild("frame-map-0-1"));
+        if (first is null || right is null || below is null) return false;
+        vec3 p = first.AbsolutePosition;
+        vec3 r = right.AbsolutePosition;
+        vec3 b = below.AbsolutePosition;
+        spacing = vec2(r.x - p.x, b.y - p.y);
+        return spacing.x >= 8.0f && spacing.x <= 80.0f &&
+               spacing.y <= -3.0f && spacing.y >= -45.0f;
+    }
+
+    bool IsMenuUid(const string &in uid) {
+        for (uint i = 0; i < menuUids.Length; i++) {
+            if (menuUids[i] == uid) return true;
         }
+        return false;
+    }
+
+    // One grouped request, no more than once per 30 minutes while menu is open.
+    void FetchCampaignPbs() {
+        if (menuLoading || menuUids.Length != 25) return;
+        if (menuLastAttempt != 0 && Time::Now - menuLastAttempt < PB_MIN_REFRESH_MS)
+            return;
         if (!Permissions::ViewRecords()) {
-            menuStatus = menuPbs.IsEmpty() ? "Classements fermés : aucun PB encore lu" :
-                "Classements fermés : " + menuPbs.GetSize() + " PB natifs déjà lus restent affichables";
+            menuStatus = "Permission de consulter les records désactivée";
             return;
         }
-        if (!NadeoServices::IsAuthenticated("NadeoLiveServices")) { menuStatus = "Authentification Nadeo en attente"; return; }
-        menuLastAttempt = Time::Now;
+        if (!NadeoServices::IsAuthenticated("NadeoLiveServices")) {
+            menuStatus = "Authentification Nadeo en attente";
+            return;
+        }
+
         menuLoading = true;
-        menuStatus = "Lecture des PB officiels (25 cartes)...";
+        menuLastAttempt = Time::Now;
+        menuStatus = "Lecture groupée des PB...";
         try {
             string account = NadeoServices::GetAccountID();
-            if (account.Length == 0) throw("compte indisponible");
+            if (account.Length == 0) throw("Compte Nadeo indisponible");
+
             string body = "{\"maps\":[";
             for (uint i = 0; i < menuUids.Length; i++) {
                 if (i > 0) body += ",";
-                body += "{\"mapUid\":\"" + menuUids[i] + "\",\"groupUid\":\"Personal_Best\"}";
+                body += "{\"mapUid\":\"" + menuUids[i] +
+                        "\",\"groupUid\":\"Personal_Best\"}";
             }
             body += "]}";
+
             Net::HttpRequest@ request = NadeoServices::Post("NadeoLiveServices",
                 NadeoServices::BaseURLLive() + "/api/token/leaderboard/group/map", body);
             request.Start();
             uint64 started = Time::Now;
             while (!request.Finished()) {
-                if (Time::Now - started > 12000 || request.ProgressDownload() > 65536) {
-                    request.Cancel(); throw("lecture des PB expirée ou trop volumineuse");
+                if (Time::Now - started > PB_HTTP_TIMEOUT_MS ||
+                        request.ProgressDownload() > 65536) {
+                    request.Cancel();
+                    throw("Lecture des PB expirée ou trop volumineuse");
                 }
                 sleep(100);
             }
-            if (request.ResponseCode() != 200 || request.ProgressDownload() > 65536) throw("service PB indisponible");
-            string response = request.String();
-            if (response.Length > 65536) throw("réponse PB trop volumineuse");
-            Json::Value@ results = Json::Parse(response);
+            if (request.ResponseCode() != 200 || request.ProgressDownload() > 65536)
+                throw("Réponse PB invalide : HTTP " + request.ResponseCode());
+            string raw = request.String();
+            if (raw.Length > 65536) throw("Réponse PB trop longue");
+            Json::Value@ records = Json::Parse(raw);
+            if (records is null || records.GetType() != Json::Type::Array ||
+                    records.Length > 25)
+                throw("Réponse PB inattendue");
+
             dictionary next;
-            if (!DecodeMenuPbs(results, next)) throw("réponse PB invalide ou en doublon");
-            if (NadeoServices::GetAccountID() != account) throw("compte changé pendant le chargement");
-            if (results.Length == 0 && menuPbs.GetSize() > 0 && menuAccount == account) {
-                menuStatus = "Réponse vide : anciens PB conservés sans rafraîchissement";
-            } else {
-                menuPbs = next;
-                menuAccount = account;
-                menuStatus = menuPbs.GetSize() + "/25 PB officiels disponibles";
-                menuNeedsRefresh = false;
+            for (uint i = 0; i < records.Length; i++) {
+                const Json::Value@ record = records[i];
+                if (record is null || record.GetType() != Json::Type::Object ||
+                        !record.HasKey("mapUid") || !record.HasKey("groupUid") ||
+                        !record.HasKey("score"))
+                    throw("Record incomplet");
+                string uid = string(record.Get("mapUid"));
+                string group = string(record.Get("groupUid"));
+                uint score = 0;
+                if (!ReadMenuMs(record, "score", score) || !IsMenuUid(uid) ||
+                        group != "Personal_Best" || next.Exists(uid))
+                    throw("Record hors campagne ou invalide");
+                next.Set(uid, score);
             }
+            if (NadeoServices::GetAccountID() != account)
+                throw("Compte changé pendant la lecture");
+
+            // Preserve a better known PB if Nadeo returns a partial or stale batch.
+            if (menuAccount == account) {
+                for (uint i = 0; i < menuUids.Length; i++) {
+                    uint previous = 0;
+                    uint fresh = 0;
+                    if (!menuPbs.Get(menuUids[i], previous)) continue;
+                    if (!next.Get(menuUids[i], fresh) || previous < fresh)
+                        next.Set(menuUids[i], previous);
+                }
+            }
+            if (records.Length > 0 || menuPbs.IsEmpty() || account != menuAccount)
+                menuPbs = next;
+            menuAccount = account;
+            menuStatus = "PB chargés : " + menuPbs.GetSize() + "/25";
         } catch {
-            menuStatus = "PB de campagne indisponibles (nouvel essai différé)";
-            warn("Progressive Medals: lecture groupée des PB impossible : " + getExceptionInfo());
+            menuStatus = "PB indisponibles (réessai différé)";
+            warn("Progressive Medals: " + getExceptionInfo());
         }
         menuLoading = false;
     }
 
-    void MenuBadgeLoop() {
+    void MenuPbWorker() {
         while (true) {
-            if (menuAccount.Length > 0 && (!NadeoServices::IsAuthenticated("NadeoLiveServices") ||
-                    NadeoServices::GetAccountID() != menuAccount)) {
-                menuPbs.DeleteAll(); menuAccount = ""; menuLastAttempt = 0;
-                menuStatus = "Compte changé : PB à relire";
+            if (menuAccount.Length > 0 &&
+                    (!NadeoServices::IsAuthenticated("NadeoLiveServices") ||
+                     NadeoServices::GetAccountID() != menuAccount)) {
+                menuPbs.DeleteAll();
+                menuAccount = "";
+                menuLastAttempt = 0;
+                menuStatus = "Compte changé : PB à recharger";
             }
-            if (S_MenuBadges && catalogVersion >= 4 && FindFallMenuPage() !is null && !menuLoading &&
-                    (menuLastAttempt == 0 || Time::Now - menuLastAttempt >= 1800000 ||
-                     (menuNeedsRefresh && Time::Now - menuLastAttempt >= 300000))) RefreshMenuPbs();
-            sleep(2000);
+            if (PML_ShowMenuBadges && menuUids.Length == 25 &&
+                    FindFallMenuPage() !is null && !menuLoading)
+                FetchCampaignPbs();
+            sleep(2500);
         }
     }
 
+    void RememberMenuPb(const string &in uid, uint best) {
+        if (best == 0 || best == uint(-1) || !IsMenuUid(uid) ||
+                !NadeoServices::IsAuthenticated("NadeoLiveServices"))
+            return;
+        string account = NadeoServices::GetAccountID();
+        if (account.Length == 0) return;
+        if (menuAccount.Length > 0 && menuAccount != account)
+            menuPbs.DeleteAll();
+        menuAccount = account;
+        uint previous = 0;
+        if (!menuPbs.Get(uid, previous) || best < previous)
+            menuPbs.Set(uid, best);
+    }
+
+    int HighestMenuBadge(const MenuTarget@ target, uint best) {
+        if (target is null || best == 0 || best > MAX_TIME_MS ||
+                target.times.Length != 3)
+            return -1;
+        int highest = -1;
+        for (uint i = 0; i < 3; i++) {
+            if (best <= target.times[i]) highest = int(i);
+        }
+        return highest;
+    }
+
+    // Settings are 1080p-relative; retain the user-approved 58px / +3px defaults.
+    vec2 GetMenuBadgeOffset(float scale) {
+        return vec2(float(PML_MenuOffsetX) * scale,
+                    float(PML_MenuOffsetY) * scale);
+    }
+
+    float GetMenuBadgeSize(float scale) {
+        return float(PML_MenuBadgeSize) * scale;
+    }
+
     void RenderCampaignBadges() {
-        if (!S_MenuBadges || catalogVersion < 4 || menuPbs.IsEmpty() || menuUids.Length != 25 || menuTextures.Length != COUNT) return;
+        if (menuUids.Length != 25 || menuTextures.Length != 3 ||
+                menuPbs.IsEmpty())
+            return;
         CGameManialinkPage@ page = FindFallMenuPage();
         if (page is null) return;
-        float unit = Math::Min(float(Display::GetWidth()) / 320.0f, float(Display::GetHeight()) / 180.0f);
-        float resolutionScale = float(Display::GetHeight()) / 1080.0f;
-        float size = float(S_MenuBadgeSize) * resolutionScale;
+        float unit = Math::Min(float(Display::GetWidth()) / 320.0f,
+                               float(Display::GetHeight()) / 180.0f);
+        float scale = float(Display::GetHeight()) / 1080.0f;
+        float size = GetMenuBadgeSize(scale);
+        vec2 offset = GetMenuBadgeOffset(scale);
         vec2 gridSpacing;
-        bool hasGrid = GetMenuGridSpacing(page, gridSpacing);
+        bool hasGrid = GetFallGridSpacing(page, gridSpacing);
+
         nvg::Save();
         try {
             for (uint i = 0; i < menuUids.Length; i++) {
                 uint pb = 0;
                 if (!menuPbs.Get(menuUids[i], pb)) continue;
-                MapGoals@ goals = FindGoals(menuUids[i]);
-                if (!IsReleased(goals)) continue;
-                int level = HighestLevel(goals, pb);
+                MenuTarget@ goal;
+                if (!menuTargets.Get(menuUids[i], @goal) || goal is null)
+                    continue;
+                int level = HighestMenuBadge(goal, pb);
                 if (level < 0 || menuTextures[uint(level)] is null) continue;
-                string frameId = "frame-map-" + (i / 5) + "-" + (i % 5);
-                CGameManialinkFrame@ frame = cast<CGameManialinkFrame@>(page.GetFirstChild(frameId));
+
+                CGameManialinkFrame@ frame =
+                    cast<CGameManialinkFrame@>(page.GetFirstChild(
+                        "frame-map-" + (i / 5) + "-" + (i % 5)));
                 if (frame is null || !frame.Visible) continue;
-                CGameManialinkControl@ nativeMedal = frame.GetFirstChild("quad-medal");
+                CGameManialinkControl@ medal = frame.GetFirstChild("quad-medal");
                 vec3 pos;
-                if (nativeMedal !is null && nativeMedal.Visible) {
-                    pos = nativeMedal.AbsolutePosition;
-                } else {
+                if (medal !is null && medal.Visible) pos = medal.AbsolutePosition;
+                else {
                     if (!hasGrid) continue;
                     pos = frame.AbsolutePosition;
                     pos.x += gridSpacing.x * 0.72f;
                     pos.y += gridSpacing.y * 0.35f;
                 }
-                float x = float(Display::GetWidth()) * 0.5f + pos.x * unit + float(S_MenuBadgeOffsetX) * resolutionScale;
-                float y = float(Display::GetHeight()) * 0.5f - pos.y * unit + float(S_MenuBadgeOffsetY) * resolutionScale;
-                if (x < 0 || y < 0 || x + size > Display::GetWidth() || y + size > Display::GetHeight()) continue;
+
+                float x = float(Display::GetWidth()) * 0.5f +
+                          pos.x * unit + offset.x;
+                float y = float(Display::GetHeight()) * 0.5f -
+                          pos.y * unit + offset.y;
+                if (x < 0 || y < 0 || x + size > Display::GetWidth() ||
+                        y + size > Display::GetHeight())
+                    continue;
                 nvg::BeginPath();
                 nvg::Rect(x, y, size, size);
-                nvg::FillPaint(nvg::TexturePattern(vec2(x, y), vec2(size, size), 0.0f, menuTextures[uint(level)], 1.0f));
+                nvg::FillPaint(nvg::TexturePattern(vec2(x, y), vec2(size, size),
+                    0.0f, menuTextures[uint(level)], 1.0f));
                 nvg::Fill();
                 nvg::ClosePath();
             }
         } catch {
-            menuStatus = "Rendu du menu indisponible après changement d'écran";
+            menuStatus = "Menu modifié : dessin différé";
         }
         nvg::Restore();
     }
