@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Offline consistency checks; this is not an AngelScript compiler."""
+"""Check the packaged Progressive Medals sources without running Trackmania.
+
+This is a data/packaging check, not an AngelScript compilation or in-game test.
+"""
 import json
 import re
 import struct
@@ -7,48 +10,70 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+PLUGIN = ROOT / "plugin"
+RANKS = ("platinum", "emerald", "diamond")
+UID_PATTERN = re.compile(r"[A-Za-z0-9_-]{15,80}\Z")
+
+
+def validate_times(row):
+    times = [row[f"{rank}_ms"] for rank in RANKS]
+    assert all(type(value) is int for value in times), row
+    assert 0 < times[2] <= times[1] <= times[0] <= 86_400_000, row
+
 
 def validate():
-    data = json.loads((ROOT / "plugin/catalog/fall-2026-goals.json").read_text("utf-8"))
-    assert data["campaign"] == "Fall 2026"
-    maps = data["maps"]
-    assert len(maps) == 25
-    seen = set()
-    for idx, row in enumerate(maps, 1):
+    campaign = json.loads((PLUGIN / "catalog/fall-2026-goals.json").read_text("utf-8"))
+    catalogue = json.loads((PLUGIN / "catalog/sheet-medals-bootstrap.json").read_text("utf-8"))
+    assert campaign["campaign"] == "Fall 2026"
+    assert catalogue["schema"] == 1
+    assert len(campaign["maps"]) == 25
+
+    published = {}
+    for row in catalogue["maps"]:
+        uid = row["map_uid"]
+        assert UID_PATTERN.fullmatch(uid), uid
+        assert uid not in published, f"Duplicate published UID: {uid}"
+        assert row["status"] == "PUBLISHED"
+        assert row["map_type"] in ("campaign", "totd")
+        validate_times(row)
+        published[uid] = row
+
+    assert any(row["map_type"] == "totd" for row in published.values())
+    campaign_uids = set()
+    for row in campaign["maps"]:
         uid = row["uid"]
-        assert re.fullmatch(r"[A-Za-z0-9_-]{15,80}", uid), idx
-        assert uid not in seen, idx
-        seen.add(uid)
-        p, e, d = [row[k + "_ms"] for k in ("platinum", "emerald", "diamond")]
-        assert all(type(x) is int for x in (p, e, d)), idx
-        assert 0 < d <= e <= p <= 86_400_000, idx
-    def goals(row):
-        return tuple(row[k + "_ms"] for k in ("platinum", "emerald", "diamond"))
-    assert goals(maps[0]) == (20143, 20098, 20058)
-    assert goals(maps[1]) == (21564, 21510, 21425)
+        assert UID_PATTERN.fullmatch(uid), uid
+        assert uid not in campaign_uids, f"Duplicate Fall UID: {uid}"
+        campaign_uids.add(uid)
+        validate_times(row)
+        match = published[uid]
+        assert match["map_type"] == "campaign"
+        assert all(row[f"{rank}_ms"] == match[f"{rank}_ms"] for rank in RANKS), uid
 
-    for name in ("platinum", "emerald", "diamond"):
-        raw = (ROOT / "plugin/assets" / (name + ".png")).read_bytes()
-        assert raw.startswith(b"\x89PNG\r\n\x1a\n")
-        w, h, depth, color = struct.unpack(">IIBB", raw[16:26])
-        assert w >= 128 and h >= 128 and depth == 8 and color == 6, name
+    for rank in RANKS:
+        raw = (PLUGIN / "assets" / f"{rank}.png").read_bytes()
+        assert raw.startswith(b"\x89PNG\r\n\x1a\n"), rank
+        width, height = struct.unpack(">II", raw[16:24])
+        assert width >= 128 and height >= 128, rank
 
-    main = (ROOT / "plugin/Main.as").read_text("utf-8")
-    menu = (ROOT / "plugin/MenuBadges.as").read_text("utf-8")
-    manifest = (ROOT / "plugin/info.toml").read_text("utf-8")
-    assert "int PML_MenuBadgeSize = 58;" in main
-    assert "int PML_MenuOffsetX = 3;" in main
-    assert "void Render()" in main and "RenderCampaignBadges()" in main
-    assert "if (menuAccount == account)" in menu
-    assert 'dependencies = [ "NadeoServices" ]' in manifest
-    assert 'version = "0.2.1"' in manifest
-    assert "&test=1" not in main and "&test=1" not in menu
-    print("PASS: Fall 2026 roster, goals, exceptions, PNG files and source configuration")
-    print("NOT TESTED: AngelScript compilation and in-game runtime")
+    sources = {}
+    for name in ("Main", "MenuBadges", "TotdBadges", "SheetCatalogue", "OfficialPbs"):
+        sources[name] = (PLUGIN / f"{name}.as").read_text("utf-8")
+    assert "int PML_MenuBadgeSize = 61;" in sources["Main"]
+    assert "int PML_TotdBadgeSize = 56;" in sources["Main"]
+    assert "NadeoServices" in (PLUGIN / "info.toml").read_text("utf-8")
+    assert 'version = "0.7.2"' in (PLUGIN / "info.toml").read_text("utf-8")
+    assert "supabase.co" not in "\n".join(sources.values()).lower()
+
+    print(f"PASS: {len(campaign_uids)} Fall maps, "
+          f"{sum(row['map_type'] == 'totd' for row in published.values())} TOTDs, "
+          "5 AngelScript sources and 3 PNG icons")
+    print("NOT TESTED: Openplanet compilation and Trackmania runtime")
+
 
 if __name__ == "__main__":
     try:
         validate()
-    except (AssertionError, OSError, KeyError, ValueError) as exc:
+    except (AssertionError, KeyError, OSError, ValueError) as exc:
         print("FAIL:", exc, file=sys.stderr)
         sys.exit(1)

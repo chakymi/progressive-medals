@@ -1,16 +1,13 @@
-# Validation record
+# Tests manuels après installation
 
-| Check | Status | Evidence |
-| --- | --- | --- |
-| Fall 2026 roster and unique UIDs | Offline check | `tools/validate_project.py` |
-| Platinum / Emerald / Diamond time ordering | Offline check | Same |
-| Fall 01 / 02 historical exceptions | Offline check | 20143/20098/20058 and 21564/21510/21425 ms |
-| PNG resource presence and manifest | Offline check | Same (PNG signatures + RGBA) |
-| Visual badge positioning in menu | User-confirmed on **previous** baseline | Screenshot shared on 10 November 2026 |
-| 0.2.1 AngelScript compilation | **Not tested** | Requires installed Openplanet |
-| 0.2.1 game runtime | **Not tested** | Requires Trackmania |
-| Partial PB reply / account switch | **Not game-tested** | Manual test needed |
-| TOTD/future season menu support | **Not implemented** | No such test possible |
+- [ ] Lancer Trackmania sans erreur de compilation dans Openplanet.
+- [ ] Ouvrir Fall 2026 : vérifier les 25 badges (comportement identique à la v0.6.3).
+- [ ] Ouvrir le calendrier TOTD novembre 2026 sans crash.
+- [ ] Laisser 5 à 15 secondes aux PB officiels pour se charger et consulter la ligne « Calendrier TOTD » du panneau.
+- [ ] Vérifier un PB connu (11 novembre : 41.885 s, objectif Émeraude 42.440 s dans le snapshot de référence).
+- [ ] Changer de mois vers octobre 2026, puis revenir à novembre. Aucun badge ne doit être placé sur une case d'un mois erroné.
+- [ ] Vérifier qu'un état « mois non identifié » laisse le jeu utilisable même s'il n'affiche pas de badge.
+- [ ] Vérifier le comportement hors connexion (objectifs en cache, PB déjà récupérés seulement).
+- [ ] En cas de crash, revenir à la dernière version de campagne fonctionnelle et transmettre Openplanet.log + rapport de crash.
 
-Do not mark a runtime feature as validated until it is observed in game,
-with the tested Openplanet version and a reproducible test case.
+Validation statique effectuée : les fichiers campagne et SheetCatalogue n'ont pas été modifiés ; absence de `ControlsCache`, de cache de `CGameManialinkPage@` global et de requêtes réseau dans `RenderTotdBadges`.

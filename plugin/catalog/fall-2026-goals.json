@@ -1,6 +1,6 @@
 {
   "campaign": "Fall 2026",
-  "source": "Historical PUBLISHED Google Sheets snapshot, including two user-approved exceptions",
+  "source": "Snapshot of PUBLISHED rows from Google Sheets Medals, 2026-11-11; 2 manual exceptions included",
   "maps": [
     {
       "uid": "ypPmohQofd72MyTsIsijKfrJH98",

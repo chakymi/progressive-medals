@@ -1,73 +1,47 @@
-# Progressive Medals — review candidate 0.2.1
+# Progressive Medals — v0.7.2 (code clarifié)
 
-An **unofficial Trackmania 2020 / Openplanet plugin** that shows Platinum,
-Emerald and Diamond PNG badges on the **Fall 2026** campaign map grid.
-A player's personal best determines the highest earned badge. Badges are
-a NanoVG overlay, **not** new native Trackmania medals.
+Plugin Openplanet pour Trackmania 2020. Affiche Platine, Émeraude et Diamant
+sur le menu **Fall 2026** et le calendrier **TOTD**, selon le PB du joueur.
 
-**Status:** functional menu presentation was demonstrated in-game by the owner
-for the prior baseline. The 0.2.1 changes have **not** yet received an in-game
-regression test or independent human review. This is not an approved Openplanet
-release. Source was created and revised with generative AI assistance.
+## Sources et responsabilités
 
-## What it does
-
-- Reads the 25 Fall 2026 map UIDs and fixed target times from
-  `plugin/catalog/fall-2026-goals.json`. Two user-approved historical exceptions
-  are included for maps 01 and 02. Country-named maps follow playlist order.
-- Retrieves the signed-in player's Fall 2026 PBs with **one grouped Nadeo Live
-  Services request**, at most every 30 minutes while the menu is open.
-- Uses a public Google Apps Script endpoint to retrieve three fixed goal times
-  for the current loaded map. Published triples are cached in memory.
-- Displays the highest earned medal on each map tile, using supplied PNGs.
-  Default size **58px**, X offset **+3px**, Y offset **−28px** at 1080p.
-
-No API credentials belong in this repository. The backend that captures and
-publishes world-rank goals is a separate service; the plugin does not recalculate
-or publish those goals.
-
-## Local test installation
-
-Copy the contents of the `plugin/` folder into one Openplanet development
-plugin folder, preserving `info.toml`, both `.as` files, `assets/` and
-`catalog/`. Install `NadeoServices`. Disable earlier Progressive Medals
-versions to prevent duplicate overlays. Reload, open the Fall 2026 campaign
-map selection grid, and check both earned and unearned medals.
-
-The current-map status window can be toggled from the Openplanet menu. Its
-three API requests are made only when a map needs goal data; unpublished
-`-1` results are retried after ten minutes.
-
-## Source layout
-
-| File | Purpose |
+| Fichier | Responsabilité |
 | --- | --- |
-| `plugin/Main.as` | Current-map goal fetch/cache, local PB, settings and UI |
-| `plugin/MenuBadges.as` | Fall 2026 roster, grouped player PBs, map-grid drawing |
-| `plugin/catalog/fall-2026-goals.json` | Immutable Fall 2026 target snapshot |
-| `plugin/assets/*.png` | Three user-supplied medal icons |
-| `tools/validate_project.py` | Offline integrity checks only |
-| `REVIEW.md` | Human review checklist and known limitations |
-| `TESTS.md` | Evidence versus tests still required |
+| `Main.as` | Paramètres, PB local, fenêtre d'information, démarrage des tâches. |
+| `SheetCatalogue.as` | Export CSV public du Sheet, validation, cache, objectifs par UID/date. |
+| `OfficialPbs.as` | Une requête Nadeo groupée et une validation communes aux deux menus. |
+| `MenuBadges.as` | Ordre et superposition des 25 cartes Fall 2026, PB de campagne. |
+| `TotdBadges.as` | Mois/jours visibles, PB du mois, superposition TOTD. |
 
-## Not implemented / not guaranteed
+**Temps des médailles** : onglet `Medals` du Google Sheet. Seules les lignes `PUBLISHED` sont utilisées.
+**PB personnels** : API Nadeo. Aucune requête aux classements mondiaux pour recalculer les seuils.
+**Mode hors ligne** : dernier export validé, ou snapshot du Sheet intégré au ZIP.
+**Fichier `fall-2026-goals.json`** : liste ordonnée des 25 UID, plus temps
+historiques de secours pour ne pas vider le menu avant le chargement du Sheet.
+Ces temps ne remplacent jamais des valeurs du Sheet validées plus récentes.
+Pas de Supabase ; pas besoin de modifier Apps Script.
 
-- Campaign-menu badges for **future campaigns** or **TOTDs**.
-- Compatibility with future changes to Trackmania's internal menu controls.
-- Published-game support for every resolution or UI scale.
-- Compilation/test certification for this GitHub review branch.
+## Exécution
 
-Please read `REVIEW.md` before submitting or publishing anything.
+1. `Main()` initialise les textures et les objectifs, puis lance trois tâches :
+   actualisation du Sheet, PB de campagne, PB TOTD.
+2. Le rendu lit la page visible du jeu sans stocker de contrôles ManiaLink.
+3. Les deux menus utilisent `HighestBadge(...)` pour calculer la meilleure médaille.
+4. Les tâches réseau conservent les PB locaux plus rapides et ne doivent pas
+   écraser les PB d'un autre compte Nadeo.
 
-## Historical code
+Pour augmenter la taille, modifier les réglages **Taille des badges menu** et
+**Taille des badges TOTD**. Valeurs par défaut : **61** et **56** (base 1080p).
 
-This branch intentionally removes the obsolete Supabase publisher, old
-GitHub Actions publishing workflows, and the original large AngelScript
-implementation from the proposed current tree. They remain available in Git
-history and the unchanged `main` branch until this proposal is reviewed.
+## Installation
 
-## Provenance
+Fermer Trackmania. Remplacer l'ancien dossier `ProgressiveMedals_Sheets` dans
+`OpenplanetNext/Plugins`, sans conserver une autre version du même plugin.
+Relancer en **Developer**. Contrôler d'abord Fall 2026, puis les TOTD.
+Le mode Regular nécessite une signature reconnue par Openplanet.
 
-The owner specified the medal design and ranking rules. The code has been
-developed with AI assistance. Independent technical review and confirmation of
-PNG redistribution rights are required before a release.
+## Relecture humaine et tests
+
+Voir `REVIEW.md` pour le périmètre exact des changements et `TESTS.md` pour
+les vérifications manuelles. **Ce code n'a pas été recompilé dans Openplanet par
+l'assistant** : les tests statiques ne remplacent pas un essai dans le jeu.

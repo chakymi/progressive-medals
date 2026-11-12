@@ -1,0 +1,375 @@
+{
+  "schema": 1,
+  "maps": [
+    {
+      "map_uid": "C_rfoNKKy5Lrz0Wxbvos9YZcWC7",
+      "map_name": "TOTD 2026-10-31",
+      "map_type": "totd",
+      "release_at_utc": "2026-10-31T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 34087,
+      "emerald_ms": 32938,
+      "diamond_ms": 31808
+    },
+    {
+      "map_uid": "ypPmohQofd72MyTsIsijKfrJH98",
+      "map_name": "Fall 2026 - 01",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 20143,
+      "emerald_ms": 20098,
+      "diamond_ms": 20058
+    },
+    {
+      "map_uid": "kG3Rv5UyAgqu9e05ive6SIOei59",
+      "map_name": "Fall 2026 - 02",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 21564,
+      "emerald_ms": 21510,
+      "diamond_ms": 21425
+    },
+    {
+      "map_uid": "kFAkAeGS10_LZqazKRtwTClKAWa",
+      "map_name": "Fall 2026 - 03",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 19368,
+      "emerald_ms": 19215,
+      "diamond_ms": 19052
+    },
+    {
+      "map_uid": "86Gl5t02hAzSD7oiiGjzi9p3wN9",
+      "map_name": "Fall 2026 - 04",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 20885,
+      "emerald_ms": 20660,
+      "diamond_ms": 20411
+    },
+    {
+      "map_uid": "v96wCr7mP5xEGxNLSnZC6DAp4se",
+      "map_name": "Fall 2026 - 05",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 22408,
+      "emerald_ms": 22211,
+      "diamond_ms": 22017
+    },
+    {
+      "map_uid": "cLYaG2Zgsxgui3s2GsVLs_KB1e6",
+      "map_name": "Fall 2026 - 06",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 27147,
+      "emerald_ms": 26996,
+      "diamond_ms": 26846
+    },
+    {
+      "map_uid": "8hy1I_EGrEJQQZS8SN3S3rZoHnj",
+      "map_name": "Fall 2026 - 07",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 29560,
+      "emerald_ms": 29236,
+      "diamond_ms": 28921
+    },
+    {
+      "map_uid": "6HxhQPmuTq3k9aqLYUCKzyveyrj",
+      "map_name": "Fall 2026 - 08",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 29718,
+      "emerald_ms": 29500,
+      "diamond_ms": 29014
+    },
+    {
+      "map_uid": "RnjnOu0fwna8i3hjnRT1Wnuxqz2",
+      "map_name": "Fall 2026 - 09",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 28355,
+      "emerald_ms": 28061,
+      "diamond_ms": 27796
+    },
+    {
+      "map_uid": "bhUUSH5VObphEXdiTefufnQRgqe",
+      "map_name": "Fall 2026 - 10",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 30237,
+      "emerald_ms": 29960,
+      "diamond_ms": 29683
+    },
+    {
+      "map_uid": "C2gHk3vNJKbcvS9HNkcsZsXDkxf",
+      "map_name": "Fall 2026 - 11",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 32465,
+      "emerald_ms": 32120,
+      "diamond_ms": 31671
+    },
+    {
+      "map_uid": "02b27YA4k3MWlS50A9TFGZy7Eu",
+      "map_name": "Fall 2026 - 12",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 32394,
+      "emerald_ms": 32128,
+      "diamond_ms": 31684
+    },
+    {
+      "map_uid": "JBzaNvC881cVdRIF2vHmBXAXX3f",
+      "map_name": "Fall 2026 - 13",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 29671,
+      "emerald_ms": 29215,
+      "diamond_ms": 28775
+    },
+    {
+      "map_uid": "yMT18290SqZuoemMgbjfTPEIxA",
+      "map_name": "Fall 2026 - 14",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 37388,
+      "emerald_ms": 36881,
+      "diamond_ms": 36397
+    },
+    {
+      "map_uid": "bYG3jvXV8_FdQvihFN1II3vIU0g",
+      "map_name": "Fall 2026 - 15",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 29774,
+      "emerald_ms": 29606,
+      "diamond_ms": 29194
+    },
+    {
+      "map_uid": "329LW2no6y6MSODVtejfO19yaMd",
+      "map_name": "Fall 2026 - 16",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 53558,
+      "emerald_ms": 52935,
+      "diamond_ms": 52188
+    },
+    {
+      "map_uid": "cHm6_B17YvXb9Sb6sJnWKZBzmbi",
+      "map_name": "Fall 2026 - 17",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 46392,
+      "emerald_ms": 45648,
+      "diamond_ms": 44725
+    },
+    {
+      "map_uid": "DtZod9QxwCN5W1Xb7Q_TpCUrft",
+      "map_name": "Fall 2026 - 18",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 62844,
+      "emerald_ms": 62089,
+      "diamond_ms": 60876
+    },
+    {
+      "map_uid": "n08wkWW4wuvFVnlDGhg0EQNtKn8",
+      "map_name": "Fall 2026 - 19",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 42948,
+      "emerald_ms": 41837,
+      "diamond_ms": 40810
+    },
+    {
+      "map_uid": "lHHMZkgxAw2Qdhrr7wAcP0x5Nxi",
+      "map_name": "Fall 2026 - 20",
+      "map_type": "campaign",
+      "release_at_utc": "2026-10-01T15:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 46228,
+      "emerald_ms": 45558,
+      "diamond_ms": 44291
+    },
+    {
+      "map_uid": "eO5YaC9a_wks7nDc2bcIFfk7PB4",
+      "map_name": "Egypt 2026",
+      "map_type": "campaign",
+      "release_at_utc": "",
+      "status": "PUBLISHED",
+      "platinum_ms": 83380,
+      "emerald_ms": 78451,
+      "diamond_ms": 74025
+    },
+    {
+      "map_uid": "FUrAZFVkgl9dZKpVFPlpvSf0plc",
+      "map_name": "United Kingdom 2026",
+      "map_type": "campaign",
+      "release_at_utc": "",
+      "status": "PUBLISHED",
+      "platinum_ms": 82891,
+      "emerald_ms": 75797,
+      "diamond_ms": 72298
+    },
+    {
+      "map_uid": "V7eUfkrrczwLX33j4geGUglMBT1",
+      "map_name": "Czech Republic 2026",
+      "map_type": "campaign",
+      "release_at_utc": "",
+      "status": "PUBLISHED",
+      "platinum_ms": 70200,
+      "emerald_ms": 65252,
+      "diamond_ms": 61855
+    },
+    {
+      "map_uid": "nuLZ3tXpNxiZKOEprMlntvFZFub",
+      "map_name": "India 2026",
+      "map_type": "campaign",
+      "release_at_utc": "",
+      "status": "PUBLISHED",
+      "platinum_ms": 72526,
+      "emerald_ms": 69604,
+      "diamond_ms": 66462
+    },
+    {
+      "map_uid": "Cys52buy8uoYWkwroz7bbrg4_z4",
+      "map_name": "New Zealand 2026",
+      "map_type": "campaign",
+      "release_at_utc": "",
+      "status": "PUBLISHED",
+      "platinum_ms": 76006,
+      "emerald_ms": 70828,
+      "diamond_ms": 65508
+    },
+    {
+      "map_uid": "eqYkZnUT__552a2wq1MFdMR2nZj",
+      "map_name": "TOTD 2026-11-01",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-01T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 39949,
+      "emerald_ms": 38768,
+      "diamond_ms": 37607
+    },
+    {
+      "map_uid": "x7Ee8oHAGoid_i2mwaYUqKHiWq1",
+      "map_name": "TOTD 2026-11-02",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-02T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 52252,
+      "emerald_ms": 49925,
+      "diamond_ms": 48042
+    },
+    {
+      "map_uid": "ENVhkkO3Wu8cpQogfpl4IxT5eB3",
+      "map_name": "TOTD 2026-11-03",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-03T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 55353,
+      "emerald_ms": 54140,
+      "diamond_ms": 52985
+    },
+    {
+      "map_uid": "a22v0nplKvkZ7pRNLYekEz4C14m",
+      "map_name": "TOTD 2026-11-04",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-04T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 59588,
+      "emerald_ms": 58341,
+      "diamond_ms": 56875
+    },
+    {
+      "map_uid": "c94vCARJWKM_FsXQ4dnaqQWUHqf",
+      "map_name": "TOTD 2026-11-05",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-05T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 56495,
+      "emerald_ms": 52783,
+      "diamond_ms": 50691
+    },
+    {
+      "map_uid": "vhoyrjyLctApcrIf2dWcKPzGv72",
+      "map_name": "TOTD 2026-11-06",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-06T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 47913,
+      "emerald_ms": 46972,
+      "diamond_ms": 46101
+    },
+    {
+      "map_uid": "kK4Y9xueCwOAIUVuLeeBWPMPaQ8",
+      "map_name": "TOTD 2026-11-07",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-07T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 66247,
+      "emerald_ms": 62724,
+      "diamond_ms": 60468
+    },
+    {
+      "map_uid": "w7S7kafpRd3nuIfTdwrWnad86Le",
+      "map_name": "TOTD 2026-11-08",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-08T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 51494,
+      "emerald_ms": 49735,
+      "diamond_ms": 47884
+    },
+    {
+      "map_uid": "nCt8Z7o3spCdSVdEpjP0nSTvWH7",
+      "map_name": "TOTD 2026-11-09",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-09T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 44963,
+      "emerald_ms": 43832,
+      "diamond_ms": 42786
+    },
+    {
+      "map_uid": "l3DOx2Z_7zA6eNw85e3vxC2Kbid",
+      "map_name": "TOTD 2026-11-10",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-10T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 42640,
+      "emerald_ms": 42155,
+      "diamond_ms": 41647
+    },
+    {
+      "map_uid": "UwllR6c3v9aVmS6GRrKm7WlAwuj",
+      "map_name": "TOTD 2026-11-11",
+      "map_type": "totd",
+      "release_at_utc": "2026-11-11T18:00:00.000Z",
+      "status": "PUBLISHED",
+      "platinum_ms": 43258,
+      "emerald_ms": 42440,
+      "diamond_ms": 41751
+    }
+  ]
+}
