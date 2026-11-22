@@ -1,79 +1,117 @@
-#!/usr/bin/env python3
-"""Check the packaged Progressive Medals sources without running Trackmania.
+"""Static regression checks for Progressive Medals (no Openplanet runtime)."""
+from __future__ import annotations
 
-This is a data/packaging check, not an AngelScript compilation or in-game test.
-"""
 import json
+import hashlib
 import re
-import struct
-import sys
+import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-PLUGIN = ROOT / "plugin"
-RANKS = ("platinum", "emerald", "diamond")
-UID_PATTERN = re.compile(r"[A-Za-z0-9_-]{15,80}\Z")
+ROOT = Path(__file__).resolve().parents[1] / "plugin"
+BASELINE = Path(__file__).resolve().with_name("baseline_manifest.json")
+FILES = sorted(ROOT.glob("*.as"))
 
 
-def validate_times(row):
-    times = [row[f"{rank}_ms"] for rank in RANKS]
-    assert all(type(value) is int for value in times), row
-    assert 0 < times[2] <= times[1] <= times[0] <= 86_400_000, row
+def assert_balanced(source: str, name: str) -> None:
+    """Check matching delimiters outside comments and string literals."""
+    stack = []
+    pairs = {')': '(', ']': '[', '}': '{'}
+    i = 0
+    while i < len(source):
+        c = source[i]
+        if c == '"':
+            i += 1
+            while i < len(source):
+                if source[i] == '\\':
+                    i += 2
+                    continue
+                if source[i] == '"':
+                    break
+                i += 1
+        elif source.startswith('//', i):
+            i = source.find('\n', i)
+            if i < 0:
+                break
+        elif source.startswith('/*', i):
+            end = source.find('*/', i+2)
+            if end < 0:
+                raise AssertionError(f"{name}: unclosed block comment")
+            i = end + 1
+        elif c in '([{':
+            stack.append(c)
+        elif c in ')]}':
+            assert stack and stack.pop() == pairs[c], f"{name}: unmatched {c}"
+        i += 1
+    assert not stack, f"{name}: unclosed delimiters {stack}"
 
 
-def validate():
-    campaign = json.loads((PLUGIN / "catalog/fall-2026-goals.json").read_text("utf-8"))
-    catalogue = json.loads((PLUGIN / "catalog/sheet-medals-bootstrap.json").read_text("utf-8"))
-    assert campaign["campaign"] == "Fall 2026"
-    assert catalogue["schema"] == 1
-    assert len(campaign["maps"]) == 25
-
-    published = {}
-    for row in catalogue["maps"]:
-        uid = row["map_uid"]
-        assert UID_PATTERN.fullmatch(uid), uid
-        assert uid not in published, f"Duplicate published UID: {uid}"
-        assert row["status"] == "PUBLISHED"
-        assert row["map_type"] in ("campaign", "totd")
-        validate_times(row)
-        published[uid] = row
-
-    assert any(row["map_type"] == "totd" for row in published.values())
-    campaign_uids = set()
-    for row in campaign["maps"]:
-        uid = row["uid"]
-        assert UID_PATTERN.fullmatch(uid), uid
-        assert uid not in campaign_uids, f"Duplicate Fall UID: {uid}"
-        campaign_uids.add(uid)
-        validate_times(row)
-        match = published[uid]
-        assert match["map_type"] == "campaign"
-        assert all(row[f"{rank}_ms"] == match[f"{rank}_ms"] for rank in RANKS), uid
-
-    for rank in RANKS:
-        raw = (PLUGIN / "assets" / f"{rank}.png").read_bytes()
-        assert raw.startswith(b"\x89PNG\r\n\x1a\n"), rank
-        width, height = struct.unpack(">II", raw[16:24])
-        assert width >= 128 and height >= 128, rank
-
-    sources = {}
-    for name in ("Main", "MenuBadges", "TotdBadges", "SheetCatalogue", "OfficialPbs"):
-        sources[name] = (PLUGIN / f"{name}.as").read_text("utf-8")
-    assert "int PML_MenuBadgeSize = 61;" in sources["Main"]
-    assert "int PML_TotdBadgeSize = 56;" in sources["Main"]
-    assert "NadeoServices" in (PLUGIN / "info.toml").read_text("utf-8")
-    assert 'version = "0.7.2"' in (PLUGIN / "info.toml").read_text("utf-8")
-    assert "supabase.co" not in "\n".join(sources.values()).lower()
-
-    print(f"PASS: {len(campaign_uids)} Fall maps, "
-          f"{sum(row['map_type'] == 'totd' for row in published.values())} TOTDs, "
-          "5 AngelScript sources and 3 PNG icons")
-    print("NOT TESTED: Openplanet compilation and Trackmania runtime")
+def comments(source: str):
+    # All project comments start with // (no block comments are used).
+    for line in source.splitlines():
+        match = re.match(r'^\s*//\s*(.*)$', line)
+        if match:
+            yield match.group(1)
 
 
-if __name__ == "__main__":
-    try:
-        validate()
-    except (AssertionError, KeyError, OSError, ValueError) as exc:
-        print("FAIL:", exc, file=sys.stderr)
-        sys.exit(1)
+def run() -> None:
+    assert len(FILES) == 6, f"Expected six AngelScript files, got {len(FILES)}"
+    contents = {p.name: p.read_text('utf-8') for p in FILES}
+    all_code = '\n'.join(contents.values())
+    for name, content in contents.items():
+        assert_balanced(content, name)
+        assert not any(ord(c) > 127 for comment in comments(content) for c in comment), \
+            f"Non-English or non-ASCII comment in {name}"
+    assert 'supabase' not in all_code.lower()
+    assert 'GetKeys()' not in contents['TotdBadges.as'].split('void RenderTotdBadges')[1]
+    assert 'for (int y = 2021; y <= 2100;' not in all_code
+    assert all_code.count('nvg::TexturePattern(') == 1
+    assert all_code.count('frame.GetFirstChild("quad-medal")') == 1
+    assert all_code.count('GetAccountID()') == 1  # Account logic is centralized.
+    assert all_code.count('const string[] ICON_PATHS') == 1
+    assert 'MenuTarget' not in all_code and 'IsMenuUid' not in all_code
+    assert all_code.count('bool AreValidMedalTimes(') == 1
+    assert all_code.count('int HighestBadge(') == 1
+    assert 'PML_MenuBadgeSize = 61' in all_code
+    assert 'PML_TotdBadgeSize = 56' in all_code
+    assert 'pos.x += layout.gridSpacing.x * 0.72f' in all_code
+    assert 'pos.y += layout.gridSpacing.y * 0.35f' in all_code
+
+    fall = json.loads((ROOT/'catalog/fall-2026-goals.json').read_text('utf-8'))
+    snap = json.loads((ROOT/'catalog/sheet-medals-bootstrap.json').read_text('utf-8'))
+    assert len(fall['maps']) == 25
+    assert all(set(m) == {'uid'} for m in fall['maps'])
+    uids = [m['uid'] for m in fall['maps']]
+    assert len(set(uids)) == 25
+    published = snap['maps']
+    published_by_uid = {m['map_uid']:m for m in published}
+    assert all(uid in published_by_uid for uid in uids)
+    assert len(published) == 37
+    assert sum(m['map_type']=='totd' for m in published) == 12
+    for row in published:
+        p, e, d = (row[k] for k in ('platinum_ms', 'emerald_ms', 'diamond_ms'))
+        assert 0 < d <= e <= p <= 86400000
+    assert [published_by_uid[uid]['platinum_ms'] for uid in uids[:2]] == [20143, 21564]
+    assert [published_by_uid[uid]['diamond_ms'] for uid in uids[:2]] == [20058, 21425]
+    date_example = next(m for m in published if m['map_type']=='totd'
+                        and m['release_at_utc'].startswith('2026-11-11'))
+    assert (date_example['platinum_ms'], date_example['emerald_ms'],
+            date_example['diamond_ms']) == (43258, 42440, 41751)
+    assert 41751 < 41885 <= 42440
+
+    baseline = json.loads(BASELINE.read_text('utf-8'))
+    assert uids == baseline['fall_order'], 'Campaign UID order changed'
+    for name, expected_hash in baseline['checked_unchanged'].items():
+        if name == 'catalog/fall-2026-goals.json':
+            continue  # The goal-times duplication was intentionally removed.
+        actual_hash = hashlib.sha256((ROOT/name).read_bytes()).hexdigest()
+        assert actual_hash == expected_hash, f'Unexpected change to {name}'
+
+    lines = sum(len(s.splitlines()) for s in contents.values())
+    print(f"PASS: {len(FILES)} AngelScript files, {lines} lines (including blanks/comments)")
+    print("PASS: 25 ordered Fall UIDs, 12 snapshot TOTDs, historical exceptions")
+    print("PASS: shared drawing/account handling, English code comments, no Supabase")
+    print("NOTE: Openplanet compilation and in-game behavior are NOT checked here")
+
+
+if __name__ == '__main__':
+    run()

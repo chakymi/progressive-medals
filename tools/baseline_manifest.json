@@ -1,0 +1,47 @@
+{
+  "reference_version": "0.7.2",
+  "checked_unchanged": {
+    "catalog/sheet-medals-bootstrap.json": "2a7da21d71fad7d4257e9fda21cfa76cf0556104190e255cb3e7de173f93f360",
+    "catalog/fall-2026-goals.json": "63f2b64676cc6624d2bb81424554cf0090a9f6a07c8ee5c6a5813ff643db094b",
+    "assets/diamond.png": "ff6820ef587e0558e9ea01450a813fbfb2a80949bc57131c4b83893fc0b8f117",
+    "assets/emerald.png": "ba1fd6da4b76713184b9515b8c9646dbf21f541b01f3e71445f181d5e8d3c271",
+    "assets/platinum.png": "556ba3ae6b4c63d9045a71758ace7555b96c0e665b9404f1f3e58cbc3241926c"
+  },
+  "fall_order": [
+    "ypPmohQofd72MyTsIsijKfrJH98",
+    "kG3Rv5UyAgqu9e05ive6SIOei59",
+    "kFAkAeGS10_LZqazKRtwTClKAWa",
+    "86Gl5t02hAzSD7oiiGjzi9p3wN9",
+    "v96wCr7mP5xEGxNLSnZC6DAp4se",
+    "cLYaG2Zgsxgui3s2GsVLs_KB1e6",
+    "8hy1I_EGrEJQQZS8SN3S3rZoHnj",
+    "6HxhQPmuTq3k9aqLYUCKzyveyrj",
+    "RnjnOu0fwna8i3hjnRT1Wnuxqz2",
+    "bhUUSH5VObphEXdiTefufnQRgqe",
+    "C2gHk3vNJKbcvS9HNkcsZsXDkxf",
+    "02b27YA4k3MWlS50A9TFGZy7Eu",
+    "JBzaNvC881cVdRIF2vHmBXAXX3f",
+    "yMT18290SqZuoemMgbjfTPEIxA",
+    "bYG3jvXV8_FdQvihFN1II3vIU0g",
+    "329LW2no6y6MSODVtejfO19yaMd",
+    "cHm6_B17YvXb9Sb6sJnWKZBzmbi",
+    "DtZod9QxwCN5W1Xb7Q_TpCUrft",
+    "n08wkWW4wuvFVnlDGhg0EQNtKn8",
+    "lHHMZkgxAw2Qdhrr7wAcP0x5Nxi",
+    "eO5YaC9a_wks7nDc2bcIFfk7PB4",
+    "FUrAZFVkgl9dZKpVFPlpvSf0plc",
+    "V7eUfkrrczwLX33j4geGUglMBT1",
+    "nuLZ3tXpNxiZKOEprMlntvFZFub",
+    "Cys52buy8uoYWkwroz7bbrg4_z4"
+  ],
+  "historic_exceptions": {
+    "first_two_platinum_ms": [
+      20143,
+      21564
+    ],
+    "first_two_diamond_ms": [
+      20058,
+      21425
+    ]
+  }
+}

@@ -49,19 +49,7 @@ namespace PML {
         return day >= 1 && day <= days;
     }
 
-    // Use map UIDs to locate Fall 2026 cards, not their display names.
-    // The last five cards have country names in the Sheet, and card names
-    // can change without changing the map. The known 25-card order is loaded
-    // by InitMenuBadges() from the original Fall 2026 catalogue.
-    int FindFall2026IndexByUid(const string &in uid) {
-        for (uint i = 0; i < menuUids.Length; i++) {
-            if (menuUids[i] == uid) return int(i);
-        }
-        return -1;
-    }
-
     bool ReadSheetCatalogue(const Json::Value@ root, dictionary &out allGoals,
-                            dictionary &out campaignGoals, string[] &out campaignUids,
                             dictionary &out dayGoals, dictionary &out dateGoals,
                             string &out fingerprint) {
         if (root is null || root.GetType() != Json::Type::Object ||
@@ -73,7 +61,8 @@ namespace PML {
                 maps.GetType() != Json::Type::Array ||
                 maps.Length > 3000) return false;
 
-        string[] fallUids(25);
+        bool[] seenFall(FALL_MAP_COUNT);
+        uint fallCount = 0;
         dictionary seen;
         fingerprint = "";
         for (uint i = 0; i < maps.Length; i++) {
@@ -83,7 +72,6 @@ namespace PML {
                     !row.HasKey("map_type") || !row.HasKey("release_at_utc") ||
                     !row.HasKey("status")) return false;
             string uid = string(row.Get("map_uid"));
-            string name = string(row.Get("map_name"));
             string type = string(row.Get("map_type"));
             string released = string(row.Get("release_at_utc"));
             if (!IsValidUid(uid) || seen.Exists(uid) ||
@@ -93,10 +81,10 @@ namespace PML {
             uint p = 0; uint e = 0; uint d = 0;
             if (!ReadPositiveMs(row, "platinum_ms", p) ||
                     !ReadPositiveMs(row, "emerald_ms", e) ||
-                    !ReadPositiveMs(row, "diamond_ms", d) ||
-                    p < e || e < d) return false;
-            seen.Set(uid, true);
+                    !ReadPositiveMs(row, "diamond_ms", d)) return false;
             uint[] times = {p, e, d};
+            if (!AreValidMedalTimes(times)) return false;
+            seen.Set(uid, true);
             Goals@ goal = Goals();
             goal.times = times;
             allGoals.Set(uid, @goal);
@@ -105,11 +93,9 @@ namespace PML {
             if (type == "campaign") {
                 int index = FindFall2026IndexByUid(uid);
                 if (index >= 0) {
-                    if (fallUids[index].Length != 0) return false;
-                    fallUids[index] = uid;
-                    MenuTarget@ target = MenuTarget();
-                    target.times = times;
-                    campaignGoals.Set(uid, @target);
+                    if (seenFall[index]) return false;
+                    seenFall[index] = true;
+                    fallCount++;
                 }
             } else {
                 int year = 0; int month = 0; int day = 0;
@@ -128,27 +114,16 @@ namespace PML {
             }
         }
         if (seen.IsEmpty()) return false;
-        // Fall 2026 is either complete (25 cards), or not displayed at all.
-        for (uint i = 0; i < fallUids.Length; i++) {
-            if (fallUids[i].Length == 0) {
-                if (!campaignGoals.IsEmpty()) return false;
-                break;
-            }
-        }
-        for (uint i = 0; i < fallUids.Length; i++) {
-            if (fallUids[i].Length > 0) campaignUids.InsertLast(fallUids[i]);
-        }
-        return true;
+        // Never install a partial Fall 2026 roster over known valid targets.
+        return fallCount == 0 || fallCount == FALL_MAP_COUNT;
     }
 
     bool InstallSheetCatalogue(const Json::Value@ root, bool saveCache) {
         dictionary goals;
-        dictionary campaign;
-        string[] fallUids;
         dictionary day;
         dictionary date;
         string fingerprint;
-        if (!ReadSheetCatalogue(root, goals, campaign, fallUids, day, date, fingerprint))
+        if (!ReadSheetCatalogue(root, goals, day, date, fingerprint))
             return false;
         if (sheetCatalogueVersion != 0 && fingerprint == sheetFingerprint) {
             status = "Google Sheets : objectifs à jour";
@@ -156,25 +131,29 @@ namespace PML {
             return true;
         }
 
-        // One cooperative-thread update: no partial catalogue can be displayed.
-        publishedByUid = goals;
-        // Never clear the working campaign UI if the export contains no Fall set.
-        if (fallUids.Length == 25) {
-            menuTargets = campaign;
-            menuUids = fallUids;
+        // When a future export omits Fall 2026, keep the last Sheet snapshot
+        // for those historical maps. Do not invent or recalculate targets.
+        for (uint i = 0; i < menuUids.Length; i++) {
+            if (goals.Exists(menuUids[i])) continue;
+            Goals@ previous;
+            if (publishedByUid.Get(menuUids[i], @previous) && previous !is null)
+                goals.Set(menuUids[i], @previous);
         }
+        // Publish only a fully validated catalogue; keep no page pointers.
+        publishedByUid = goals;
         totdByUid = day;
         totdByDate = date;
         sheetFingerprint = fingerprint;
         sheetCatalogueVersion++;
         totdCatalogueVersion = sheetCatalogueVersion;
+        RebuildTotdMonthIndex();
         menuStatus = "Google Sheets : " + menuUids.Length + " cartes Fall 2026";
         totdStatus = "Google Sheets : " + totdByUid.GetSize() + " TOTD publiées";
         status = "Google Sheets : " + publishedByUid.GetSize() + " cartes publiées";
         sheetLastError = "";
         if (saveCache) {
             try { Json::ToFile(IO::FromStorageFolder(SHEET_CACHE_FILE), root); }
-            catch { warn("Progressive Medals : sauvegarde du cache Google Sheets impossible"); }
+            catch { warn(LOG_PREFIX + "could not save Google Sheets cache"); }
         }
         return true;
     }
@@ -184,12 +163,12 @@ namespace PML {
         // not a second service. It prevents blank badges while offline.
         try {
             InstallSheetCatalogue(Json::FromFile("catalog/sheet-medals-bootstrap.json"), false);
-        } catch { warn("Progressive Medals : snapshot Google Sheet illisible"); }
+        } catch { warn(LOG_PREFIX + "bundled Google Sheets snapshot is unreadable"); }
 
         string path = IO::FromStorageFolder(SHEET_CACHE_FILE);
         if (!IO::FileExists(path) || IO::FileSize(path) > SHEET_MAX_BYTES) return;
         try { InstallSheetCatalogue(Json::FromFile(path), false); }
-        catch { warn("Progressive Medals : dernier cache Google Sheet invalide"); }
+        catch { warn(LOG_PREFIX + "saved Google Sheets cache is invalid"); }
     }
 
     // Escape CSV cell values before placing them in the JSON catalogue. Google Sheets may contain quotes
@@ -250,7 +229,9 @@ namespace PML {
                 name.Length == 0 || name.Length > 120) return false;
         uint p = 0; uint e = 0; uint d = 0;
         if (!ReadCsvMs(cells[9], p) || !ReadCsvMs(cells[10], e) ||
-                !ReadCsvMs(cells[11], d) || p < e || e < d) return false;
+                !ReadCsvMs(cells[11], d)) return false;
+        uint[] times = {p, e, d};
+        if (!AreValidMedalTimes(times)) return false;
         if (builder.publishedCount != 0) builder.jsonText += ",";
         builder.jsonText += "{\"map_uid\":" + JsonEscapeCsv(uid) +
             ",\"map_name\":" + JsonEscapeCsv(name) +
@@ -338,7 +319,7 @@ namespace PML {
             status = sheetCatalogueVersion == 0 ?
                 "Google Sheets : aucun catalogue disponible" :
                 "Google Sheets : lecture impossible (dernier catalogue conservé)";
-            warn("Progressive Medals - Google Sheets : " + sheetLastError);
+            warn(LOG_PREFIX + "Google Sheets: " + sheetLastError);
         }
     }
 
