@@ -1,10 +1,7 @@
-// Shared, read-only access to the logged-in player's personal bests.
-// Called by the campaign and TOTD workers. Never call from Render().
 namespace PML {
     const uint64 OFFICIAL_PB_TIMEOUT_MS = 12000;
     const uint OFFICIAL_PB_MAX_BYTES = 65536;
 
-    // Validate integer millisecond values received from JSON.
     bool ReadPositiveMs(const Json::Value@ object, const string &in key, uint &out value) {
         value = 0;
         if (object is null || !object.HasKey(key)) return false;
@@ -16,8 +13,6 @@ namespace PML {
         return true;
     }
 
-    // One Nadeo request for up to 31 maps. Missing records are normal.
-    // Throws on unexpected data so callers never use a partial response.
     void ReadOfficialPbs(const string[] &in uids, dictionary &out result) {
         if (uids.Length == 0 || uids.Length > 31)
             throw("Nombre de cartes PB invalide");

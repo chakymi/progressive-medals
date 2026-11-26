@@ -1,5 +1,3 @@
-// Track of the Day badges on the native monthly calendar.
-// Rendering reads only visible tiles; the PB worker never accesses ManiaLink.
 namespace PML {
     const uint64 TOTD_PB_RETRY_MS = 15000;
     const string[] TOTD_MONTH_FR = {"janvier", "février", "mars", "avril", "mai", "juin",
@@ -15,9 +13,9 @@ namespace PML {
         uint[] times;
     }
 
-    dictionary totdByUid;      // UID -> TotdGoal@.
-    dictionary totdByDate;     // YYYYMMDD -> TotdGoal@.
-    dictionary totdFallbackMonth; // Weekday -> unique YYYYMM; 0 means ambiguous.
+    dictionary totdByUid;
+    dictionary totdByDate;
+    dictionary totdFallbackMonth;
     uint totdCatalogueVersion = 0;
     PlayerPbs@ totdPbs = PlayerPbs();
     string totdStatus = "Calendrier TOTD en attente";
@@ -26,7 +24,6 @@ namespace PML {
     int totdVisibleYear = 0;
     int totdVisibleMonth = 0;
 
-    // Cache only plain text and date values, never Trackmania page pointers.
     string cachedCalendarTitle = "";
     int cachedCalendarWeekday = -1;
     uint cachedCalendarVersion = 0;
@@ -37,7 +34,6 @@ namespace PML {
         return "" + (year * 10000 + month * 100 + day);
     }
 
-    // 0 = Monday, 6 = Sunday; matches the Trackmania calendar grid.
     int FirstTotdWeekday(int year, int month) {
         if (year < 2021 || year > 2100 || month < 1 || month > 12) return -1;
         const int[] offsets = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
@@ -46,7 +42,6 @@ namespace PML {
         return (sunday + 6) % 7;
     }
 
-    // Run once after a catalogue update, not every frame.
     void RebuildTotdMonthIndex() {
         totdFallbackMonth.DeleteAll();
         string[]@ keys = totdByUid.GetKeys();
@@ -61,10 +56,9 @@ namespace PML {
             else if (existing != monthKey)
                 totdFallbackMonth.Set(weekdayKey, 0);
         }
-        cachedCalendarVersion = 0; // Invalidate the resolved-month cache.
+        cachedCalendarVersion = 0;
     }
 
-    // Empty tiles at the start of the first row reveal the first weekday.
     int FirstVisibleColumn(CGameManialinkPage@ page) {
         if (page is null) return -1;
         int first = -1;
@@ -77,7 +71,6 @@ namespace PML {
         return first;
     }
 
-    // Parse one four-digit year from the title instead of testing 80 years.
     int CalendarYearFromTitle(const string &in title) {
         for (uint i = 0; i + 3 < title.Length; i++) {
             int year = 0;
@@ -107,8 +100,6 @@ namespace PML {
         return false;
     }
 
-    // Prefer the visible title. Only use the weekday fallback if it uniquely
-    // identifies a published month; ambiguous months must never show badges.
     bool ResolveTotdMonth(CGameManialinkPage@ page, int &out year, int &out month,
                           int &out weekday) {
         weekday = FirstVisibleColumn(page);
@@ -138,7 +129,6 @@ namespace PML {
         return year != 0 && month != 0;
     }
 
-    // Fetch the month's published UIDs with the shared official PB reader.
     void FetchTotdPbs(int year, int month) {
         if (year < 2021 || year > 2100 || month < 1 || month > 12 || totdPbs.loading)
             return;
@@ -185,7 +175,7 @@ namespace PML {
 
     void TotdPbWorker() {
         while (true) {
-            if (SynchronizeAccount(totdPbs)) {
+            if (SyncAccount(totdPbs)) {
                 totdLastMonth = 0;
                 totdLastPbVersion = 0;
             }
@@ -215,7 +205,6 @@ namespace PML {
         totdVisibleMonth = month;
         if (totdPbs.times.IsEmpty()) return;
 
-        // Preserve the working calendar anchor and grid positions from v0.7.2.
         int spacingCol = weekday < 6 ? weekday : 0;
         int spacingRow = weekday < 6 ? 0 : 1;
         BadgeLayout@ layout = MakeBadgeLayout(page, spacingCol, spacingRow,

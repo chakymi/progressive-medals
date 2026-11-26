@@ -1,5 +1,3 @@
-// Shared medal rules, account handling and native-menu drawing.
-// Only the render callbacks access ManiaLink controls; no UI pointers are cached.
 namespace PML {
     const string LOG_PREFIX = "Progressive Medals: ";
     const uint MEDAL_COUNT = 3;
@@ -7,9 +5,8 @@ namespace PML {
     const uint FALL_GRID_SIDE = 5;
     const uint TOTD_GRID_COLUMNS = 7;
     const uint TOTD_MAX_DAYS = 31;
-    const uint64 PB_REFRESH_MS = 1800000; // 30 minutes.
+    const uint64 PB_REFRESH_MS = 1800000;
 
-    // The order is Platinum, Emerald, Diamond (slowest to fastest target).
     bool AreValidMedalTimes(const uint[] &in times) {
         return times.Length == MEDAL_COUNT && times[0] > 0 &&
             times[0] <= MAX_TIME_MS && times[0] >= times[1] &&
@@ -26,7 +23,7 @@ namespace PML {
     }
 
     class PlayerPbs {
-        dictionary times; // Map UID -> best time for this account.
+        dictionary times;
         string account = "";
         uint64 lastAttempt = 0;
         bool loading = false;
@@ -37,9 +34,7 @@ namespace PML {
         return NadeoServices::GetAccountID();
     }
 
-    // Clearing both the account and its records prevents cross-account badges.
-    // Returns true when the identity changed (including sign-out).
-    bool SynchronizeAccount(PlayerPbs@ player) {
+    bool SyncAccount(PlayerPbs@ player) {
         string account = AuthenticatedAccount();
         if (player.account == account) return false;
         player.times.DeleteAll();
@@ -48,10 +43,9 @@ namespace PML {
         return true;
     }
 
-    // Keep a faster local result when the official API has not caught up yet.
     void RememberBestPb(PlayerPbs@ player, const string &in uid, uint best) {
         if (best == 0 || best > MAX_TIME_MS || AuthenticatedAccount().Length == 0) return;
-        SynchronizeAccount(player);
+        SyncAccount(player);
         uint previous = 0;
         if (!player.times.Get(uid, previous) || best < previous)
             player.times.Set(uid, best);
@@ -68,8 +62,6 @@ namespace PML {
         }
     }
 
-    // Both pages use the same visible menu layers, with different anchors.
-    // Scan only while needed; never keep a page or control between frames.
     CGameManialinkPage@ FindBadgeMenuPage(bool calendar) {
         try {
             CTrackMania@ app = cast<CTrackMania@>(GetApp());
@@ -98,13 +90,10 @@ namespace PML {
                             (title.Contains("automne") || title.Contains("fall"))) return page;
                 }
             }
-        } catch {
-            // Trackmania may rebuild a menu during navigation.
-        }
+        } catch {}
         return null;
     }
 
-    // Shared fallback position for a tile without a visible native medal.
     bool MeasureGridSpacing(CGameManialinkPage@ page, int col, int row,
                             vec2 &out spacing) {
         if (page is null) return false;
@@ -143,7 +132,6 @@ namespace PML {
         return layout;
     }
 
-    // Call between nvg::Save()/Restore(), from Render() only.
     void DrawBadge(CGameManialinkFrame@ frame, int level, BadgeLayout@ layout) {
         if (frame is null || !frame.Visible || layout is null || level < 0 ||
                 uint(level) >= badgeTextures.Length || badgeTextures[uint(level)] is null)

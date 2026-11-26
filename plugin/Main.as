@@ -1,6 +1,3 @@
-// Progressive Medals: published goals from Google Sheets, player PBs from Nadeo.
-// Badges are drawn over the game menus without modifying native controls.
-
 [Setting name="Afficher Progressive Medals" category="Affichage"]
 bool PML_ShowWindow = true;
 
@@ -46,7 +43,7 @@ namespace PML {
     uint currentPb = 0;
     string currentPbAccount = "";
     string status = "En attente d'une carte";
-    dictionary publishedByUid; // Medals published in Google Sheets only.
+    dictionary publishedByUid;
     UI::Texture@[] icons;
     nvg::Texture@[] badgeTextures;
 
@@ -83,7 +80,6 @@ namespace PML {
         }
     }
 
-    // Reads the game's own local score manager; sends no record queries to Nadeo.
     void PollMapAndLocalPb() {
         CGameCtnApp@ app = GetApp();
         if (app is null || app.RootMap is null) {
@@ -115,14 +111,12 @@ namespace PML {
                 "PersonalBest", "", "TimeAttack", ""));
             if (best > 0 && best <= MAX_TIME_MS) {
                 if (currentPb == 0 || best < currentPb) currentPb = best;
-                if (FindFall2026IndexByUid(uid) >= 0)
+                if (FallIndexOf(uid) >= 0)
                     RememberBestPb(campaignPbs, uid, best);
                 if (totdByUid.Exists(uid))
                     RememberBestPb(totdPbs, uid, best);
             }
-        } catch {
-            // The score manager is not always exposed during loading or in menus.
-        }
+        } catch {}
     }
 
     void RenderWindow() {
@@ -140,7 +134,6 @@ namespace PML {
             UI::TextWrapped("Calendrier TOTD : " + totdStatus);
             UI::Separator();
             Goals@ goals;
-            // A validated Google Sheet snapshot serves the map HUD and menus.
             publishedByUid.Get(currentUid, @goals);
             if (goals is null) {
                 UI::TextWrapped("Aucun objectif publié disponible pour cette carte.");
@@ -166,7 +159,7 @@ namespace PML {
 void Main() {
     PML::LoadIcons();
     PML::InitMenuBadges();
-    PML::InitSheetCatalogue(); // Bundled Sheet snapshot, then the latest validated cache.
+    PML::InitSheetCatalogue();
     NadeoServices::AddAudience("NadeoLiveServices");
     startnew(PML::SheetCatalogueWorker);
     startnew(PML::MenuPbWorker);
@@ -186,7 +179,6 @@ void RenderInterface() {
     if (PML_ShowWindow) PML::RenderWindow();
 }
 
-// NVG overlay drawn on top of the native menu grid. Never edits game controls.
 void Render() {
     if (PML_ShowMenuBadges) PML::RenderCampaignBadges();
     if (PML_ShowTotdBadges) PML::RenderTotdBadges();

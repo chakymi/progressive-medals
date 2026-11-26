@@ -1,14 +1,8 @@
-// Google Sheets is the ONLY source for published medal targets.
-// The public Medals tab is read directly as CSV, without Apps Script.
-// CSV rows are validated and converted into a JSON catalogue in memory.
-// A validated local snapshot is retained if the network is unavailable.
 namespace PML {
-    // The sheet is already shared "anyone with the link: reader".
-    // Export only the Medals tab. No extra service or token is needed.
     const string SHEET_CSV_URL =
         "https://docs.google.com/spreadsheets/d/1fQDDAL-zag_7PlhQ8XZC0b2r8xzVeVHf0IKGSEbQBFA/export?format=csv&gid=694803941";
     const string SHEET_CACHE_FILE = "sheet-medals-csv-cache-v2.json";
-    const uint64 SHEET_REFRESH_MS = 900000; // Every 15 minutes, never per frame.
+    const uint64 SHEET_REFRESH_MS = 900000;
     const uint64 SHEET_TIMEOUT_MS = 20000;
     const uint SHEET_MAX_BYTES = 524288;
 
@@ -16,12 +10,9 @@ namespace PML {
     uint64 sheetLastAttempt = 0;
     bool sheetForceRefresh = false;
     string sheetFingerprint = "";
-    // Visible in the plugin window: avoid hiding the reason behind "unavailable".
     string sheetLastError = "Aucun téléchargement réussi pour le moment.";
 
-    // A TOTD date must be taken from the actual UTC release_at_utc column,
-    // never from its map name or the user's local timezone.
-    bool ReadUtcDatePart(const string &in value, uint begin, uint length, int &out number) {
+    bool ParseDigits(const string &in value, uint begin, uint length, int &out number) {
         number = 0;
         if (value.Length < begin + length) return false;
         for (uint i = begin; i < begin + length; i++) {
@@ -36,9 +27,9 @@ namespace PML {
         if (timestamp.Length < 20 || timestamp[4] != 45 ||
                 timestamp[7] != 45 || timestamp[10] != 84 ||
                 timestamp[timestamp.Length - 1] != 90 ||
-                !ReadUtcDatePart(timestamp, 0, 4, year) ||
-                !ReadUtcDatePart(timestamp, 5, 2, month) ||
-                !ReadUtcDatePart(timestamp, 8, 2, day)) return false;
+                !ParseDigits(timestamp, 0, 4, year) ||
+                !ParseDigits(timestamp, 5, 2, month) ||
+                !ParseDigits(timestamp, 8, 2, day)) return false;
         if (year < 2021 || year > 2100 || month < 1 || month > 12) return false;
         int days = 31;
         if (month == 4 || month == 6 || month == 9 || month == 11) days = 30;
@@ -91,7 +82,7 @@ namespace PML {
             fingerprint += uid + ":" + p + ":" + e + ":" + d + ";";
 
             if (type == "campaign") {
-                int index = FindFall2026IndexByUid(uid);
+                int index = FallIndexOf(uid);
                 if (index >= 0) {
                     if (seenFall[index]) return false;
                     seenFall[index] = true;
@@ -114,7 +105,6 @@ namespace PML {
             }
         }
         if (seen.IsEmpty()) return false;
-        // Never install a partial Fall 2026 roster over known valid targets.
         return fallCount == 0 || fallCount == FALL_MAP_COUNT;
     }
 
@@ -131,15 +121,12 @@ namespace PML {
             return true;
         }
 
-        // When a future export omits Fall 2026, keep the last Sheet snapshot
-        // for those historical maps. Do not invent or recalculate targets.
         for (uint i = 0; i < menuUids.Length; i++) {
             if (goals.Exists(menuUids[i])) continue;
             Goals@ previous;
             if (publishedByUid.Get(menuUids[i], @previous) && previous !is null)
                 goals.Set(menuUids[i], @previous);
         }
-        // Publish only a fully validated catalogue; keep no page pointers.
         publishedByUid = goals;
         totdByUid = day;
         totdByDate = date;
@@ -159,8 +146,6 @@ namespace PML {
     }
 
     void InitSheetCatalogue() {
-        // Bundled data is a snapshot of published rows in the same Sheet,
-        // not a second service. It prevents blank badges while offline.
         try {
             InstallSheetCatalogue(Json::FromFile("catalog/sheet-medals-bootstrap.json"), false);
         } catch { warn(LOG_PREFIX + "bundled Google Sheets snapshot is unreadable"); }
@@ -171,9 +156,7 @@ namespace PML {
         catch { warn(LOG_PREFIX + "saved Google Sheets cache is invalid"); }
     }
 
-    // Escape CSV cell values before placing them in the JSON catalogue. Google Sheets may contain quotes
-    // or commas in a map name; never interpolate unescaped content in JSON.
-    string JsonEscapeCsv(const string &in value) {
+    string JsonQuote(const string &in value) {
         string result = "\"";
         for (uint i = 0; i < value.Length; i++) {
             uint8 c = value[i];
@@ -184,7 +167,6 @@ namespace PML {
         return result + "\"";
     }
 
-    // Parse a positive integer in milliseconds, without accepting 20.123 or HTML.
     bool ReadCsvMs(const string &in raw, uint &out timeMs) {
         timeMs = 0;
         if (raw.Length == 0 || raw.Length > 8) return false;
@@ -196,16 +178,13 @@ namespace PML {
         return timeMs > 0 && timeMs <= MAX_TIME_MS;
     }
 
-    // Keeps CSV conversion state in one object. Openplanet AngelScript does not
-    // accept &inout for string/uint in function arguments.
-    class CsvCatalogueBuilder {
+    class CsvBuilder {
         string jsonText;
         uint publishedCount;
     }
 
-    // Convert one CSV row to JSON. Unpublished rows are deliberately skipped.
     bool AppendCsvRow(const string[] &in cells, uint lineNumber,
-                      CsvCatalogueBuilder@ builder) {
+                      CsvBuilder@ builder) {
         if (builder is null) return false;
         if (lineNumber == 1) {
             const string[] expected = {"map_uid", "map_name", "map_type",
@@ -233,20 +212,18 @@ namespace PML {
         uint[] times = {p, e, d};
         if (!AreValidMedalTimes(times)) return false;
         if (builder.publishedCount != 0) builder.jsonText += ",";
-        builder.jsonText += "{\"map_uid\":" + JsonEscapeCsv(uid) +
-            ",\"map_name\":" + JsonEscapeCsv(name) +
-            ",\"map_type\":" + JsonEscapeCsv(kind) +
-            ",\"release_at_utc\":" + JsonEscapeCsv(released) +
+        builder.jsonText += "{\"map_uid\":" + JsonQuote(uid) +
+            ",\"map_name\":" + JsonQuote(name) +
+            ",\"map_type\":" + JsonQuote(kind) +
+            ",\"release_at_utc\":" + JsonQuote(released) +
             ",\"status\":\"PUBLISHED\",\"platinum_ms\":" + p +
             ",\"emerald_ms\":" + e + ",\"diamond_ms\":" + d + "}";
         builder.publishedCount++;
         return builder.publishedCount <= 3000;
     }
 
-    // Quoted CSV supports commas, CRLFs, escaped quotes, and line breaks.
-    // Parse it once per download, never in Render().
     Json::Value@ CsvToCatalogue(const string &in csv) {
-        CsvCatalogueBuilder@ builder = CsvCatalogueBuilder();
+        CsvBuilder@ builder = CsvBuilder();
         builder.jsonText = "{\"schema\":1,\"maps\":[";
         builder.publishedCount = 0;
         string field = "";
@@ -287,7 +264,6 @@ namespace PML {
         catch { return null; }
     }
 
-    // Direct, anonymous read of the public Google Sheet.
     void DownloadSheetCatalogue() {
         try {
             Net::HttpRequest@ request = Net::HttpRequest(SHEET_CSV_URL);
