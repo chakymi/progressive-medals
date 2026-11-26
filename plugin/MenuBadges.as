@@ -1,8 +1,6 @@
-// Fall 2026 uses a fixed playlist order. All target times come from Google Sheets.
-// This overlay draws over native menu tiles without changing game controls.
 namespace PML {
     string[] menuUids;
-    dictionary fallIndexByUid; // UID -> playlist index (0 to 24).
+    dictionary fallIndexByUid;
     PlayerPbs@ campaignPbs = PlayerPbs();
     string menuStatus = "En attente du menu Fall 2026";
 
@@ -34,12 +32,11 @@ namespace PML {
         }
     }
 
-    int FindFall2026IndexByUid(const string &in uid) {
+    int FallIndexOf(const string &in uid) {
         uint index = 0;
         return fallIndexByUid.Get(uid, index) ? int(index) : -1;
     }
 
-    // One grouped Nadeo request, only while the Fall 2026 grid is open.
     void FetchCampaignPbs() {
         if (campaignPbs.loading || menuUids.Length != FALL_MAP_COUNT) return;
         if (campaignPbs.lastAttempt != 0 &&
@@ -68,7 +65,7 @@ namespace PML {
 
     void MenuPbWorker() {
         while (true) {
-            if (SynchronizeAccount(campaignPbs))
+            if (SyncAccount(campaignPbs))
                 menuStatus = "Compte changé : PB à relire";
             if (PML_ShowMenuBadges && menuUids.Length == FALL_MAP_COUNT &&
                     FindBadgeMenuPage(false) !is null && !campaignPbs.loading)
@@ -93,7 +90,6 @@ namespace PML {
                 if (!publishedByUid.Get(menuUids[i], @goal) || goal is null) continue;
                 int level = HighestBadge(goal.times, best);
                 if (level < 0) continue;
-                // Keep the verified Fall 2026 row/column mapping unchanged.
                 CGameManialinkFrame@ frame = cast<CGameManialinkFrame@>(
                     page.GetFirstChild("frame-map-" + (i / FALL_GRID_SIDE) + "-" +
                                        (i % FALL_GRID_SIDE)));
