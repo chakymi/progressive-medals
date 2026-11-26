@@ -1,13 +1,19 @@
-# Tests manuels après installation
+# Manual tests required in Trackmania / Openplanet
 
-- [ ] Lancer Trackmania sans erreur de compilation dans Openplanet.
-- [ ] Ouvrir Fall 2026 : vérifier les 25 badges (comportement identique à la v0.6.3).
-- [ ] Ouvrir le calendrier TOTD novembre 2026 sans crash.
-- [ ] Laisser 5 à 15 secondes aux PB officiels pour se charger et consulter la ligne « Calendrier TOTD » du panneau.
-- [ ] Vérifier un PB connu (11 novembre : 41.885 s, objectif Émeraude 42.440 s dans le snapshot de référence).
-- [ ] Changer de mois vers octobre 2026, puis revenir à novembre. Aucun badge ne doit être placé sur une case d'un mois erroné.
-- [ ] Vérifier qu'un état « mois non identifié » laisse le jeu utilisable même s'il n'affiche pas de badge.
-- [ ] Vérifier le comportement hors connexion (objectifs en cache, PB déjà récupérés seulement).
-- [ ] En cas de crash, revenir à la dernière version de campagne fonctionnelle et transmettre Openplanet.log + rapport de crash.
+- [ ] Openplanet compiles all six `.as` files with no errors or warnings.
+- [ ] Launch Fall 2026 and verify the positions and sizes of earned badges.
+- [ ] The same maps and records yield the same badge tiers as v0.7.2.
+- [ ] Open the TOTD calendar without crashing, including month transitions.
+- [ ] TOTD 2026-11-11: a PB of 41.885s is Emerald with a 42.440s threshold
+      in the reference snapshot.
+- [ ] Open an unpublished TOTD; no custom medal appears.
+- [ ] Open a month without a unique calendar match; no incorrect badges appear.
+- [ ] Change Nadeo account (or sign out) and verify previous PBs disappear.
+- [ ] Improve a local PB and check it overrides a slower cached official PB.
+- [ ] Test offline goals using the bundled Sheet snapshot and stored cache.
+- [ ] Verify bad and partial CSV data never overwrite validated targets.
+- [ ] Test another resolution/UI scale if available.
 
-Validation statique effectuée : les fichiers campagne et SheetCatalogue n'ont pas été modifiés ; absence de `ControlsCache`, de cache de `CGameManialinkPage@` global et de requêtes réseau dans `RenderTotdBadges`.
+Offline checks examine code shape, catalogue data and preservation of
+coordinates. They are **not** game runtime tests. Keep the verified v0.7.2 ZIP
+available as a rollback while testing this refactor.

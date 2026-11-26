@@ -1,8 +1,7 @@
-// Progressive Medals : objectifs publiés dans Google Sheets, PB lus via Nadeo.
-// Les badges sont dessinés par-dessus les menus, sans les modifier.
-// Conserver les fonctions de rendu testées avant toute refonte des menus.
+// Progressive Medals: published goals from Google Sheets, player PBs from Nadeo.
+// Badges are drawn over the game menus without modifying native controls.
 
-[Setting name="Afficher Progressive Medals Lite" category="Affichage"]
+[Setting name="Afficher Progressive Medals" category="Affichage"]
 bool PML_ShowWindow = true;
 
 [Setting name="Badges dans le menu Fall 2026" category="Menu"]
@@ -45,9 +44,11 @@ namespace PML {
     string currentUid = "";
     string currentTitle = "Aucune carte chargée";
     uint currentPb = 0;
+    string currentPbAccount = "";
     string status = "En attente d'une carte";
     dictionary publishedByUid; // Medals published in Google Sheets only.
     UI::Texture@[] icons;
+    nvg::Texture@[] badgeTextures;
 
     bool IsValidUid(const string &in uid) {
         if (uid.Length < 15 || uid.Length > 80) return false;
@@ -72,8 +73,13 @@ namespace PML {
         for (uint i = 0; i < ICON_PATHS.Length; i++) {
             UI::Texture@ icon;
             try { @icon = UI::LoadTexture(ICON_PATHS[i]); }
-            catch { warn("Progressive Medals Lite: PNG indisponible : " + ICON_PATHS[i]); }
+            catch { warn(LOG_PREFIX + "UI icon unavailable: " + ICON_PATHS[i]); }
             icons.InsertLast(icon);
+            nvg::Texture@ badge;
+            try { @badge = nvg::LoadTexture(ICON_PATHS[i],
+                int(nvg::TextureFlags::GenerateMipmaps)); }
+            catch { warn(LOG_PREFIX + "NVG icon unavailable: " + ICON_PATHS[i]); }
+            badgeTextures.InsertLast(badge);
         }
     }
 
@@ -87,6 +93,11 @@ namespace PML {
             return;
         }
 
+        string account = AuthenticatedAccount();
+        if (account != currentPbAccount) {
+            currentPbAccount = account;
+            currentPb = 0;
+        }
         string uid = app.RootMap.IdName;
         if (uid != currentUid) {
             currentUid = uid;
@@ -102,11 +113,12 @@ namespace PML {
             if (users is null || scores is null || users.Users.Length == 0) return;
             uint best = uint(scores.Map_GetRecord_v2(users.Users[0].Id, uid,
                 "PersonalBest", "", "TimeAttack", ""));
-            if (best > 0 && best != uint(-1) && (currentPb == 0 || best < currentPb))
-                currentPb = best;
-            if (best > 0 && best != uint(-1)) {
-                RememberMenuPb(uid, best);
-                RememberTotdPb(uid, best);
+            if (best > 0 && best <= MAX_TIME_MS) {
+                if (currentPb == 0 || best < currentPb) currentPb = best;
+                if (FindFall2026IndexByUid(uid) >= 0)
+                    RememberBestPb(campaignPbs, uid, best);
+                if (totdByUid.Exists(uid))
+                    RememberBestPb(totdPbs, uid, best);
             }
         } catch {
             // The score manager is not always exposed during loading or in menus.
@@ -115,7 +127,7 @@ namespace PML {
 
     void RenderWindow() {
         UI::SetNextWindowSize(400, 330, UI::Cond::FirstUseEver);
-        if (UI::Begin("Progressive Medals Lite", PML_ShowWindow)) {
+        if (UI::Begin("Progressive Medals", PML_ShowWindow)) {
             UI::TextWrapped(currentTitle);
             UI::Text("UID : " + (currentUid.Length == 0 ? "—" : currentUid));
             UI::Text("PB local : " + (currentPb == 0 ? "indisponible" : FormatTime(currentPb)));
@@ -124,7 +136,7 @@ namespace PML {
                 UI::TextWrapped("Diagnostic Google Sheets : " + sheetLastError);
             }
             UI::TextWrapped("Menu Fall 2026 : " + menuStatus);
-            UI::TextDisabled("Badges obtenus : " + menuPbs.GetSize() + "/25 PB reconnus");
+            UI::TextDisabled("Badges obtenus : " + campaignPbs.times.GetSize() + "/" + FALL_MAP_COUNT + " PB reconnus");
             UI::TextWrapped("Calendrier TOTD : " + totdStatus);
             UI::Separator();
             Goals@ goals;
@@ -154,7 +166,7 @@ namespace PML {
 void Main() {
     PML::LoadIcons();
     PML::InitMenuBadges();
-    PML::InitSheetCatalogue(); // Bundled Sheet snapshot, then any newer validated cache.
+    PML::InitSheetCatalogue(); // Bundled Sheet snapshot, then the latest validated cache.
     NadeoServices::AddAudience("NadeoLiveServices");
     startnew(PML::SheetCatalogueWorker);
     startnew(PML::MenuPbWorker);
@@ -166,7 +178,7 @@ void Main() {
 }
 
 void RenderMenu() {
-    if (UI::MenuItem("Progressive Medals Lite", "", PML_ShowWindow))
+    if (UI::MenuItem("Progressive Medals", "", PML_ShowWindow))
         PML_ShowWindow = !PML_ShowWindow;
 }
 

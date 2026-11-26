@@ -1,8 +1,8 @@
 [meta]
-name = "Progressive Medals - Google Sheets Direct"
+name = "Progressive Medals"
 author = "chakymi"
 category = "Race"
-version = "0.7.2"
+version = "0.8.0"
 
 [script]
 dependencies = [ "NadeoServices" ]

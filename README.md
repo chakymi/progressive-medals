@@ -1,47 +1,54 @@
-# Progressive Medals — v0.7.2 (code clarifié)
+# Progressive Medals — v0.8.0 (review candidate)
 
-Plugin Openplanet pour Trackmania 2020. Affiche Platine, Émeraude et Diamant
-sur le menu **Fall 2026** et le calendrier **TOTD**, selon le PB du joueur.
+An unofficial AngelScript/Openplanet plugin for Trackmania 2020. It overlays
+Platinum, Emerald and Diamond badges on the **Fall 2026** campaign menu and
+on the **TOTD** calendar, according to the current player's personal best.
+These badges are *not* native Trackmania medals.
 
-## Sources et responsabilités
+## Data flow
 
-| Fichier | Responsabilité |
+- **Medal goals:** published `Medals` rows in the public Google Sheet, read by
+  CSV export every 15 minutes. No Supabase or Apps Script is required.
+- **Offline goals:** the bundled snapshot of those same published Sheet rows,
+  followed by the most recently validated local cache.
+- **Fall 2026 order:** `catalog/fall-2026-goals.json` contains *only* the 25
+  ordered map UIDs. Its first two maps have historical exceptions in the Sheet;
+  the plugin does not override or recalculate those times.
+- **Player records:** grouped Nadeo Live Services requests. Local PBs can
+  improve the cached records immediately; sign-out/account changes clear them.
+- **Rendering:** NanoVG badges placed on visible native menu tiles. No
+  native ManiaLink controls are modified or cached across frames.
+
+## Source files
+
+| File | Responsibility |
 | --- | --- |
-| `Main.as` | Paramètres, PB local, fenêtre d'information, démarrage des tâches. |
-| `SheetCatalogue.as` | Export CSV public du Sheet, validation, cache, objectifs par UID/date. |
-| `OfficialPbs.as` | Une requête Nadeo groupée et une validation communes aux deux menus. |
-| `MenuBadges.as` | Ordre et superposition des 25 cartes Fall 2026, PB de campagne. |
-| `TotdBadges.as` | Mois/jours visibles, PB du mois, superposition TOTD. |
+| `Main.as` | Settings, main loop, local PB reading and status window |
+| `BadgeCommon.as` | Shared medal validation, PB/account state and badge drawing |
+| `MenuBadges.as` | Fall 2026 playlist and menu-specific rendering |
+| `TotdBadges.as` | Calendar month resolution and TOTD-specific rendering |
+| `SheetCatalogue.as` | Google Sheet CSV parsing, cache and published target data |
+| `OfficialPbs.as` | Validated grouped player-record request to Nadeo |
 
-**Temps des médailles** : onglet `Medals` du Google Sheet. Seules les lignes `PUBLISHED` sont utilisées.
-**PB personnels** : API Nadeo. Aucune requête aux classements mondiaux pour recalculer les seuils.
-**Mode hors ligne** : dernier export validé, ou snapshot du Sheet intégré au ZIP.
-**Fichier `fall-2026-goals.json`** : liste ordonnée des 25 UID, plus temps
-historiques de secours pour ne pas vider le menu avant le chargement du Sheet.
-Ces temps ne remplacent jamais des valeurs du Sheet validées plus récentes.
-Pas de Supabase ; pas besoin de modifier Apps Script.
+All **source comments are in English**. User-facing messages and setting labels
+remain in French. Display defaults are unchanged: campaign badges 61 px,
+TOTD badges 56 px (reference resolution: 1080p).
 
-## Exécution
+## Install locally
 
-1. `Main()` initialise les textures et les objectifs, puis lance trois tâches :
-   actualisation du Sheet, PB de campagne, PB TOTD.
-2. Le rendu lit la page visible du jeu sans stocker de contrôles ManiaLink.
-3. Les deux menus utilisent `HighestBadge(...)` pour calculer la meilleure médaille.
-4. Les tâches réseau conservent les PB locaux plus rapides et ne doivent pas
-   écraser les PB d'un autre compte Nadeo.
+1. Close Trackmania, and remove other versions of this plugin.
+2. Copy the complete `ProgressiveMedals_Sheets` folder into the Openplanet
+   development plugins directory, retaining `.as`, `assets/` and `catalog/`.
+3. Install/enable the `NadeoServices` dependency.
+4. Restart in **Developer mode**. Check compilation and the status window.
+5. Test Fall 2026 first, then the TOTD calendar (see `TESTS.md`).
 
-Pour augmenter la taille, modifier les réglages **Taille des badges menu** et
-**Taille des badges TOTD**. Valeurs par défaut : **61** et **56** (base 1080p).
+Openplanet Regular mode requires an appropriate plugin signature. This
+refactoring does not bypass or obtain one.
 
-## Installation
+## Review status
 
-Fermer Trackmania. Remplacer l'ancien dossier `ProgressiveMedals_Sheets` dans
-`OpenplanetNext/Plugins`, sans conserver une autre version du même plugin.
-Relancer en **Developer**. Contrôler d'abord Fall 2026, puis les TOTD.
-Le mode Regular nécessite une signature reconnue par Openplanet.
-
-## Relecture humaine et tests
-
-Voir `REVIEW.md` pour le périmètre exact des changements et `TESTS.md` pour
-les vérifications manuelles. **Ce code n'a pas été recompilé dans Openplanet par
-l'assistant** : les tests statiques ne remplacent pas un essai dans le jeu.
+This refactor has passed offline data and structural checks, **not an Openplanet
+compile or in-game regression test**. `REVIEW.md` records the main changes and
+remaining risks. The code was prepared with AI assistance; human review is
+required before submitting it for signing or distribution.

@@ -16,7 +16,6 @@ namespace PML {
         return true;
     }
 
-
     // One Nadeo request for up to 31 maps. Missing records are normal.
     // Throws on unexpected data so callers never use a partial response.
     void ReadOfficialPbs(const string[] &in uids, dictionary &out result) {
@@ -43,13 +42,12 @@ namespace PML {
             }
             sleep(100);
         }
-        if (request.ResponseCode() != 200 ||
-                request.ProgressDownload() > OFFICIAL_PB_MAX_BYTES)
+        if (request.ResponseCode() != 200)
             throw("Service PB indisponible (HTTP " + request.ResponseCode() + ")");
 
         string response = request.String();
-        if (response.Length > OFFICIAL_PB_MAX_BYTES)
-            throw("Réponse PB trop volumineuse");
+        if (response.Length == 0 || response.Length > OFFICIAL_PB_MAX_BYTES)
+            throw("Réponse PB vide ou trop volumineuse");
         Json::Value@ records = Json::Parse(response);
         if (records is null || records.GetType() != Json::Type::Array ||
                 records.Length > uids.Length)
